@@ -28,8 +28,8 @@ export class Expression {
   public arrayType: string = '';
   public arrayHoldsRefs: boolean = false;
   public nodeExpression: Node | null = null;
-  public argsList: Node[] = [];
-  public isNegative: boolean = false;
+  public argsList: Node[][] = [];
+  public arraySize: Node[] = [];
   public op: TokenType = TokenType.NONE;
   public isOperand(): boolean {
     return this.type === ExprType.BINARY_OP || this.type === ExprType.UNARY_OP ||
@@ -62,8 +62,7 @@ export class Expression {
     } else if (this.type === ExprType.IDENTIFIER_EXPR) {
       this.literal = arg;
     } else if (this.type === ExprType.NUM_EXPR) {
-      this.literal = arg.literal;
-      this.isNegative = arg.isNegative;
+      this.literal = arg;
     } else if (this.type === ExprType.FLOAT_EXPR) {
       this.literal = arg;
     }

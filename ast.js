@@ -61,7 +61,7 @@ class Expression {
         this.arrayHoldsRefs = false;
         this.nodeExpression = null;
         this.argsList = [];
-        this.isNegative = false;
+        this.arraySize = [];
         this.op = token_1.TokenType.NONE;
         this.type = type;
         // life is pain
@@ -91,8 +91,7 @@ class Expression {
             this.literal = arg;
         }
         else if (this.type === ExprType.NUM_EXPR) {
-            this.literal = arg.literal;
-            this.isNegative = arg.isNegative;
+            this.literal = arg;
         }
         else if (this.type === ExprType.FLOAT_EXPR) {
             this.literal = arg;

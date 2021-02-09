@@ -5,6 +5,7 @@ const error_handler_1 = require("./error-handler");
 const token_1 = require("./token");
 const ast_1 = require("./ast");
 const lexer_1 = require("./lexer");
+const utils_1 = require("./utils");
 class Parser {
     constructor(tokens, terminal) {
         // utils
@@ -89,7 +90,7 @@ class Parser {
             i++;
         }
     }
-    findEnclosingEnd() {
+    findBlockEnd() {
         return this.findEnclosingBrace(this.pos);
     }
     getManyStatements(node, stop) {
@@ -384,10 +385,241 @@ class Parser {
         }
         return res;
     }
+    peek(stack) {
+        return stack.length === 0 ? new ast_1.Node(null) : stack[stack.length - 1];
+    }
     getExpression(stop1, stop2 = token_1.TokenType.NONE) {
-        return [];
+        let queue = [];
+        let stack = [];
+        while (this.currToken.type !== stop1 && this.currToken.type !== stop2) {
+            let tok = this.getExprNode();
+            if (tok.toExpr().isEvaluable()) {
+                queue.push(tok);
+            }
+            else if (tok.toExpr().isOperand()) {
+                let top = this.peek(stack);
+                while (top.type !== ast_1.NodeType.UNKNOWN && top.toExpr().isOperand()
+                    &&
+                        (utils_1.Utils.getPrecedence(top.toExpr()) > utils_1.Utils.getPrecedence(tok.toExpr())
+                            ||
+                                (utils_1.Utils.getPrecedence(top.toExpr()) === utils_1.Utils.getPrecedence(tok.toExpr())
+                                    && !utils_1.Utils.isRightAssoc(tok)))
+                    &&
+                        (top.toExpr().type !== ast_1.ExprType.LPAREN)) {
+                    queue.push(stack.pop());
+                    top = this.peek(stack);
+                }
+                stack.push(tok);
+            }
+            else if (tok.toExpr().type === ast_1.ExprType.LPAREN) {
+                stack.push(tok);
+            }
+        }
+        while (this.peek(stack).type !== ast_1.NodeType.UNKNOWN) {
+            queue.push(stack.pop());
+        }
+        return queue;
+    }
+    parseFuncParams(isClass = false) {
+        let res = [];
+        const stop = token_1.TokenType.RIGHT_PAREN;
+        let paramNames = new Set();
+        while (true) {
+            this.failIfEOF(token_1.TokenType.TYPE);
+            let isRef = false;
+            if (this.currToken.type === token_1.TokenType.REF) {
+                isRef = true;
+                this.advance(); // skip the ref
+                this.failIfEOF(token_1.TokenType.TYPE);
+            }
+            if (this.currToken.type !== token_1.TokenType.TYPE) {
+                const msg = `invalid ${isClass ? 'class' : 'function'} declaration, expected a type, but ${this.currToken.getName()} found`;
+                this.throwError(msg, this.currToken);
+            }
+            const type = this.currToken.value;
+            this.advance(); // skip the type
+            if (type === 'void') {
+                if (isClass) {
+                    this.throwError('invalid class declaration, cannot have void members', this.currToken);
+                }
+                if (res.length !== 0) {
+                    this.throwError('invalid function expression, illegal void placement', this.currToken);
+                }
+                if (this.currToken.type !== token_1.TokenType.RIGHT_PAREN) {
+                    this.throwError(`invalid function expression, expected ')', but ${this.currToken.getName()} found`, this.currToken);
+                }
+                return res;
+            }
+            this.failIfEOF(token_1.TokenType.IDENTIFIER);
+            if (this.currToken.type !== token_1.TokenType.IDENTIFIER) {
+                this.throwError(`invalid function declaration, expected an identifier, but ${this.currToken.getName()} found`, this.currToken);
+            }
+            if (paramNames.has(this.currToken.value)) {
+                this.throwError(`invalid ${isClass ? 'class' : 'function'} declaration, duplicate parameter name '${this.currToken.value}'`, this.currToken);
+            }
+            paramNames.add(this.currToken.value);
+            let param = new ast_1.FuncParam(type, this.currToken.value);
+            param.isRef = isRef;
+            res.push(param);
+            this.advance();
+            this.failIfEOF(stop);
+            if (this.currToken.type === stop)
+                break;
+            this.advance(); // skip the sep
+        }
+        return res;
+    }
+    parseFuncExpression() {
+        let func = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.FUNC_EXPR));
+        let expr = func.toExpr();
+        expr.funcExpr = new ast_1.FuncExpression();
+        this.advance(); // skip the function
+        if (this.currToken.type === token_1.TokenType.OP_GT) {
+            expr.funcExpr.capturess = true;
+            this.advance(); // skip the >
+        }
+        if (this.currToken.type !== token_1.TokenType.LEFT_PAREN) {
+            this.throwError(`invalid function declaration, expected '(', but ${this.currToken.getName()} found`, this.currToken);
+        }
+        this.advance(); // skip the (
+        expr.funcExpr.params = this.parseFuncParams();
+        this.advance();
+        const returnsRef = this.currToken.type === token_1.TokenType.REF;
+        if (returnsRef) {
+            this.advance(); // skip the ref
+        }
+        if (this.currToken.type !== token_1.TokenType.TYPE) {
+            this.throwError(`invalid function declaration, expected a type, but ${this.currToken.getName()} found`, this.currToken);
+        }
+        if (returnsRef && this.currToken.value === 'void') {
+            this.throwError(`invalid function declaration, cannot return a reference to void`, this.currToken);
+        }
+        expr.funcExpr.retType = this.currToken.value;
+        expr.funcExpr.retRef = returnsRef;
+        this.advance(); // skip the type
+        if (this.currToken.type !== token_1.TokenType.LEFT_BRACE) {
+            this.throwError(`invalid function declaration, expected '{', but ${this.currToken.getName()} found`, this.currToken);
+        }
+        const funcEnd = this.findBlockEnd();
+        let funcStart = this.tokens.slice(this.pos, this.pos + funcEnd + 1);
+        let funcParser = new Parser(funcStart, token_1.TokenType.NONE);
+        let [newAST, endPos] = funcParser.parse();
+        this.pos += endPos;
+        expr.funcExpr.instructions.push(newAST);
+        this.advance();
+        return func;
+    }
+    parseArrayExpression() {
+        this.advance(); // skip the array
+        let array = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.ARRAY));
+        if (this.currToken.type !== token_1.TokenType.LEFT_PAREN) {
+            this.throwError(`invalid array expression, expected '(', but ${this.currToken.getName()} found`, this.currToken);
+        }
+        this.advance(); // skip the (
+        let expr = array.toExpr();
+        expr.argsList = this.getManyExpressions(token_1.TokenType.COMMA, token_1.TokenType.RIGHT_PAREN);
+        this.advance(); // skip the )
+        if (this.currToken.type === token_1.TokenType.LEFT_BRACKET) {
+            this.advance(); // skip the [
+            expr.arraySize = this.getExpression(token_1.TokenType.RIGHT_BRACKET);
+            this.advance(); // skip the ]
+        }
+        if (this.currToken.type === token_1.TokenType.REF) {
+            expr.arrayHoldsRefs = true;
+            this.advance(); // skip the ref
+        }
+        if (this.currToken.type !== token_1.TokenType.TYPE) {
+            this.throwError(`invalid array expression, expected a type, but ${this.currToken.getName()} found`, this.currToken);
+        }
+        if (this.currToken.value === 'void') {
+            this.throwError('invalid array expression, cannot hold void values', this.currToken);
+        }
+        expr.arrayType = this.currToken.value;
+        this.advance(); // skip the type
+        return array;
     }
     getExprNode() {
+        this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
+        if (this.currToken.type === token_1.TokenType.FUNCTION) {
+            return this.parseFuncExpression();
+        }
+        else if (this.currToken.type === token_1.TokenType.ARRAY) {
+            return this.parseArrayExpression();
+        }
+        else if (this.currToken.type === token_1.TokenType.IDENTIFIER) {
+            let id = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.IDENTIFIER_EXPR, this.currToken.value));
+            this.advance();
+            return id;
+        }
+        else if (this.currToken.type === token_1.TokenType.LEFT_PAREN) {
+            if (this.prev.type === token_1.TokenType.RIGHT_PAREN || this.prev.type === token_1.TokenType.IDENTIFIER ||
+                this.prev.type === token_1.TokenType.RIGHT_BRACKET || this.prev.type === token_1.TokenType.STRING_LITERAL) {
+                let fc = [];
+                let call = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.FUNC_CALL, fc));
+                this.advance(); // skip the (
+                let expr = call.toExpr();
+                expr.argsList = this.getManyExpressions(token_1.TokenType.COMMA, token_1.TokenType.RIGHT_PAREN);
+                this.advance(); // skip the )
+                return call;
+            }
+        }
+        else if (this.currToken.type === token_1.TokenType.LEFT_BRACKET) {
+            this.advance(); // skip the [
+            let rpn = this.getExpression(token_1.TokenType.RIGHT_BRACKET);
+            this.advance(); // skip the ]
+            let index = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.INDEX, rpn));
+            return index;
+        }
+        else if (this.currToken.type === token_1.TokenType.STRING_LITERAL) {
+            let strLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.STR_EXPR, this.currToken.value));
+            this.advance();
+            return strLiteral;
+        }
+        else if (utils_1.Utils.opUnary(this.currToken.type)) {
+            const tokenType = this.currToken.type;
+            this.advance(); // skip the op
+            this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
+            return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.UNARY_OP, tokenType));
+        }
+        else if (utils_1.Utils.opBinary(this.currToken.type)) {
+            const tokenType = this.currToken.type;
+            this.advance(); // skip the op
+            this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
+            return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BINARY_OP, tokenType));
+        }
+        else if (utils_1.Utils.isNumber(this.currToken.type)) {
+            const isNegative = this.currToken.value[0] === '-';
+            let arg = Number(this.currToken.value);
+            if (isNegative) {
+                arg = -arg;
+            }
+            const numLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.NUM_EXPR, arg));
+            this.advance(); // skip the number
+            return numLiteral;
+        }
+        else if (this.currToken.type === token_1.TokenType.FLOAT) {
+            const isNegative = this.currToken.value[0] === '-';
+            let float = Number(this.currToken.value);
+            if (isNegative) {
+                float = -float;
+            }
+            const floatLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.FLOAT_EXPR, float));
+            this.advance(); // skip the float
+            return floatLiteral;
+        }
+        else if (this.currToken.type === token_1.TokenType.TRUE || this.currToken.type === token_1.TokenType.FALSE) {
+            console.log('found boolean expression');
+            const boolean = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BOOL_EXPR, this.currToken.type === token_1.TokenType.TRUE));
+            this.advance(); // skip the boolean
+            return boolean;
+        }
+        else if (this.currToken.type === token_1.TokenType.LEFT_PAREN) {
+            this.advance(); // skip the (
+            const rpn = this.getExpression(token_1.TokenType.RIGHT_PAREN);
+            this.advance(); // skip the )
+            return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.RPN, rpn));
+        }
+        this.throwError(`expected an expression, but ${this.currToken.getName()} found`, this.currToken);
         return new ast_1.Node(null);
     }
     parse() {
