@@ -18,7 +18,7 @@ export enum ExprType {
   IDENTIFIER_EXPR, BOOL_EXPR, NOP, RPN, LPAREN, RPAREN, INDEX, ARRAY, NONE
 }
 
-type LiteralValue = number | string | boolean | undefined;
+export type LiteralValue = number | string | boolean | undefined;
 
 export class Expression {
   public nodeType: NodeType = NodeType.EXPR;

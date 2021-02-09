@@ -592,7 +592,7 @@ export class Parser {
       return new Node(new Expression(ExprType.BINARY_OP, tokenType));
     } else if (Utils.isNumber(this.currToken.type)) {
       const isNegative: boolean = this.currToken.value[0] === '-';
-      let arg: number = Number(this.currToken.value);
+      let arg: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
         arg = -arg;
       }
@@ -601,7 +601,7 @@ export class Parser {
       return numLiteral;
     } else if (this.currToken.type === TokenType.FLOAT) {
       const isNegative: boolean = this.currToken.value[0] === '-';
-      let float: number = Number(this.currToken.value);
+      let float: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
         float = -float;
       }
@@ -638,7 +638,6 @@ export class Parser {
 }
 
 new Parser(new Lexer().tokenize(`
-
   class Person(int age, str name);
 
   obj Wiktor = Person(23, 'Wiktor');
