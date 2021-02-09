@@ -27,7 +27,7 @@ export class Expression {
   public funcExpr: FuncExpression | null = null;
   public arrayType: string = '';
   public arrayHoldsRefs: boolean = false;
-  public nodeExpression: Node | null = null;
+  public nodeExpressions: Node[] = [];
   public argsList: Node[][] = [];
   public arraySize: Node[] = [];
   public op: TokenType = TokenType.NONE;
@@ -47,10 +47,10 @@ export class Expression {
     if (this.type === ExprType.UNARY_OP || this.type === ExprType.BINARY_OP) {
       this.op = arg;
     } else if (this.type === ExprType.RPN) {
-      this.nodeExpression = arg;
+      this.nodeExpressions = arg;
     } else if (this.type === ExprType.INDEX) {
       this.op = TokenType.LEFT_BRACKET;
-      this.nodeExpression = arg;
+      this.nodeExpressions = arg;
     } else if (this.type === ExprType.BOOL_EXPR) {
       this.literal = arg;
     } else if (this.type === ExprType.FUNC_EXPR) {

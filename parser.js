@@ -4,7 +4,6 @@ exports.Parser = void 0;
 const error_handler_1 = require("./error-handler");
 const token_1 = require("./token");
 const ast_1 = require("./ast");
-const lexer_1 = require("./lexer");
 const utils_1 = require("./utils");
 class Parser {
     constructor(tokens, terminal) {
@@ -611,7 +610,7 @@ class Parser {
         }
         else if (utils_1.Utils.isNumber(this.currToken.type)) {
             const isNegative = this.currToken.value[0] === '-';
-            let arg = Number(this.currToken.value);
+            let arg = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
                 arg = -arg;
             }
@@ -621,7 +620,7 @@ class Parser {
         }
         else if (this.currToken.type === token_1.TokenType.FLOAT) {
             const isNegative = this.currToken.value[0] === '-';
-            let float = Number(this.currToken.value);
+            let float = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
                 float = -float;
             }
@@ -651,16 +650,3 @@ class Parser {
     }
 }
 exports.Parser = Parser;
-new Parser(new lexer_1.Lexer().tokenize(`
-
-  class Person(int age, str name);
-
-  obj Wiktor = Person(23, 'Wiktor');
-
-  if (true) {
-    while (1 < 2 && sin(x - 5)) {
-      if (!false) break;
-      continue;
-    }
-  }
-`), token_1.TokenType.NONE).parse();

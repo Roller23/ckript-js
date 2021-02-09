@@ -636,16 +636,3 @@ export class Parser {
     this.currToken = this.tokensCount ? this.tokens[0] : Token.getDefault();
   }
 }
-
-new Parser(new Lexer().tokenize(`
-  class Person(int age, str name);
-
-  obj Wiktor = Person(23, 'Wiktor');
-
-  if (true) {
-    while (1 < 2 && sin(x - 5)) {
-      if (!false) break;
-      continue;
-    }
-  }
-`), TokenType.NONE).parse();
