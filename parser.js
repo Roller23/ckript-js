@@ -8,7 +8,6 @@ const lexer_1 = require("./lexer");
 const utils_1 = require("./utils");
 class Parser {
     constructor(tokens, terminal) {
-        // utils
         this.tokens = [];
         this.prev = token_1.Token.getDefault();
         this.pos = 0;
@@ -103,13 +102,36 @@ class Parser {
         }
         return res;
     }
+    parseClassStmt() {
+        let classExpr = new ast_1.Node(new ast_1.Statement(new ast_1.ClassStatement()));
+        let stmt = classExpr.toStmt();
+        stmt.line = this.currToken.line;
+        stmt.source = this.currToken.source;
+        this.advance(); // skip the class
+        if (this.currToken.type !== token_1.TokenType.IDENTIFIER) {
+            this.throwError(`invalid class declaration, expected an identifier, but ${this.currToken.getName()} found`, this.currToken);
+        }
+        stmt.classStmt.className = this.currToken.value;
+        this.advance(); // skip the identifier
+        if (this.currToken.type !== token_1.TokenType.LEFT_PAREN) {
+            this.throwError(`invalid class declaration, expected '(', but ${this.currToken.getName()} found`, this.currToken);
+        }
+        this.advance(); // skip the (
+        stmt.classStmt.members = this.parseFuncParams(true);
+        this.advance(); // skip the )
+        if (this.currToken.type !== token_1.TokenType.SEMI_COLON) {
+            this.throwError(`invalid class declaration, expected ';', but ${this.currToken.getName()} found`, this.currToken);
+        }
+        this.advance(); // skip the ;
+        return classExpr;
+    }
     getStatement(prev, stop) {
         if (this.currToken.type === stop) {
             return prev;
         }
         else if (this.currToken.type === token_1.TokenType.CLASS) {
             console.log('parsing class');
-            // TODO
+            return this.parseClassStmt();
         }
         else if (this.currToken.type === token_1.TokenType.SET) {
             console.log('parsing set');
@@ -608,7 +630,6 @@ class Parser {
             return floatLiteral;
         }
         else if (this.currToken.type === token_1.TokenType.TRUE || this.currToken.type === token_1.TokenType.FALSE) {
-            console.log('found boolean expression');
             const boolean = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BOOL_EXPR, this.currToken.type === token_1.TokenType.TRUE));
             this.advance(); // skip the boolean
             return boolean;
@@ -630,9 +651,16 @@ class Parser {
     }
 }
 exports.Parser = Parser;
-Parser.baseLUT = {
-    [token_1.TokenType.BINARY]: 2,
-    [token_1.TokenType.DECIMAL]: 10,
-    [token_1.TokenType.HEX]: 16
-};
-new Parser(new lexer_1.Lexer().tokenize(`if (true) {}`), token_1.TokenType.NONE).parse();
+new Parser(new lexer_1.Lexer().tokenize(`
+
+  class Person(int age, str name);
+
+  obj Wiktor = Person(23, 'Wiktor');
+
+  if (true) {
+    while (1 < 2 && sin(x - 5)) {
+      if (!false) break;
+      continue;
+    }
+  }
+`), token_1.TokenType.NONE).parse();

@@ -1,6 +1,6 @@
 import {ErrorHandler} from './error-handler';
 import {Token, TokenType} from './token'
-import {Declaration, DeclType, Expression, ExprType, FuncExpression, FuncParam, Node, NodeType, Statement, StmtType} from './ast'
+import {ClassStatement, Declaration, DeclType, Expression, ExprType, FuncExpression, FuncParam, Node, NodeType, Statement, StmtType} from './ast'
 import {Lexer} from './lexer';
 import { Utils } from './utils';
 
@@ -102,12 +102,36 @@ export class Parser {
     return res;
   }
 
+  private parseClassStmt(): Node {
+    let classExpr: Node = new Node(new Statement(new ClassStatement()));
+    let stmt = classExpr.toStmt();
+    stmt.line = this.currToken.line;
+    stmt.source = this.currToken.source;
+    this.advance(); // skip the class
+    if (this.currToken.type !== TokenType.IDENTIFIER) {
+      this.throwError(`invalid class declaration, expected an identifier, but ${this.currToken.getName()} found`, this.currToken);
+    }
+    stmt.classStmt!.className = this.currToken.value;
+    this.advance(); // skip the identifier
+    if (this.currToken.type !== TokenType.LEFT_PAREN) {
+      this.throwError(`invalid class declaration, expected '(', but ${this.currToken.getName()} found`, this.currToken);
+    }
+    this.advance(); // skip the (
+    stmt.classStmt!.members = this.parseFuncParams(true);
+    this.advance(); // skip the )
+    if (this.currToken.type !== TokenType.SEMI_COLON) {
+      this.throwError(`invalid class declaration, expected ';', but ${this.currToken.getName()} found`, this.currToken);
+    }
+    this.advance(); // skip the ;
+    return classExpr;
+  }
+
   private getStatement(prev: Node, stop: TokenType): Node {
     if (this.currToken.type === stop) {
       return prev;
     } else if (this.currToken.type === TokenType.CLASS) {
       console.log('parsing class');
-      // TODO
+      return this.parseClassStmt();
     } else if (this.currToken.type === TokenType.SET) {
       console.log('parsing set');
       let set: Node = new Node(new Statement(StmtType.SET));
@@ -613,4 +637,16 @@ export class Parser {
   }
 }
 
-new Parser(new Lexer().tokenize(`if (true) {}`), TokenType.NONE).parse();
+new Parser(new Lexer().tokenize(`
+
+  class Person(int age, str name);
+
+  obj Wiktor = Person(23, 'Wiktor');
+
+  if (true) {
+    while (1 < 2 && sin(x - 5)) {
+      if (!false) break;
+      continue;
+    }
+  }
+`), TokenType.NONE).parse();
