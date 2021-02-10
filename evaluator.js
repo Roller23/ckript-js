@@ -83,10 +83,48 @@ class Evaluator {
         else if (stmt.type === ast_1.StmtType.EXPR) {
             if (stmt.expressions.length !== 1)
                 return Evaluator.FLAG_OK;
-            console.log('ITS AN EXPRESSION BITCHES', stmt.expressions[0]);
+            this.evaluateExpression(stmt.expressions[0]);
             return Evaluator.FLAG_OK;
         }
         return 0;
+    }
+    static RpnOp(type, arg) {
+        return new RpnElement(ElementType.OPERATOR, new Operator(type, arg));
+    }
+    nodeToElement(node) {
+        const expr = node.toExpr();
+        if (expr.isOperand()) {
+            if (expr.type === ast_1.ExprType.FUNC_CALL) {
+                return Evaluator.RpnOp(OperatorType.FUNC, expr.argsList);
+            }
+            else if (expr.type === ast_1.ExprType.INDEX) {
+                return Evaluator.RpnOp(OperatorType.INDEX, expr.nodeExpressions);
+            }
+            else {
+                return Evaluator.RpnOp(OperatorType.BASIC, expr.op);
+            }
+        }
+        else {
+            // TODO
+        }
+        return new RpnElement(ElementType.UNKNOWN);
+    }
+    flattenTree(res, expressionTree) {
+        for (const node of expressionTree) {
+            const expr = node.toExpr();
+            if (expr.nodeExpressions.length !== 0) {
+                this.flattenTree(res, expr.nodeExpressions);
+            }
+            if (expr.type !== ast_1.ExprType.RPN) {
+                res.push(this.nodeToElement(node));
+            }
+        }
+    }
+    evaluateExpression(expressionTree, getRef = false) {
+        let rpnStack = [];
+        this.flattenTree(rpnStack, expressionTree);
+        let resStack = [];
+        return new vm_1.Value(utils_1.VarType.UNKNOWN);
     }
 }
 exports.Evaluator = Evaluator;

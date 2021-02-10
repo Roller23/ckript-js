@@ -1,5 +1,6 @@
 import {Token, TokenType} from './token'
 import {ErrorHandler} from './error-handler'
+import { existsSync, readFileSync } from 'fs';
 
 export class Lexer {
   private tokens: Token[] = [];
@@ -7,6 +8,7 @@ export class Lexer {
   private prevDeletedSpaces: number = 0;
   private currentLine: number = 0;
   private sourceFile: string = '';
+  private fileDir: string = '';
   private ptr: number = 0;
   private end: number = 0;
   private code: string = '';
@@ -85,7 +87,24 @@ export class Lexer {
           }
           this.ptr--;
           const strTokenType: TokenType = TokenType[tokenString.toUpperCase() as keyof typeof TokenType];
-          if (strTokenType !== undefined) {
+          if (tokenString === 'include') {
+            this.ptr++;
+            this.consumeWhitespace();
+            c = this.code[this.ptr];
+            if (!(c === '"' || c === "'" || c === '`') || this.ptr === this.end || this.ptr + 1 === this.end) {
+              this.throwError('Expected a string literal after include');
+            }
+            this.ptr++;
+            let path: string = `${this.fileDir}`;
+            while (this.code[this.ptr] !== c && this.ptr !== this.end) {
+              path += this.code[this.ptr++];
+            }
+            const [toks, err] = new Lexer().processFile(path);
+            if (err) {
+              this.throwError(`Couldn't include file ${path}`);
+            }
+            this.tokens.push(...toks);
+          } else if (strTokenType !== undefined) {
             this.addToken(strTokenType, '');
           } else {
             if (!Lexer.builtinTypes.includes(tokenString)) {
@@ -128,7 +147,7 @@ export class Lexer {
           if (negation && !this.prevDeletedSpaces) {
             if (this.tokens.length !== 0) {
               const t: TokenType = this.tokens[this.tokens.length - 1].type;
-              if (t === TokenType.IDENTIFIER || t === TokenType.BINARY || t === TokenType.DECIMAL || t === TokenType.OCTAL || t === TokenType.FLOAT || t === TokenType.LEFT_PAREN) {
+              if (t === TokenType.IDENTIFIER || t === TokenType.BINARY || t === TokenType.DECIMAL || t === TokenType.FLOAT || t === TokenType.LEFT_PAREN) {
                 negation = false;
               }
             }
@@ -223,4 +242,26 @@ export class Lexer {
     }
     return this.tokens;
   }
+
+  /**
+   * @param filename input file
+   * @returns a tuple with tokens and boolean indicating an error
+   */
+
+  public processFile(filename: string): [Token[], boolean] {
+    if (!existsSync(filename)) {
+      return [[], true];
+    }
+    this.sourceFile = filename;
+    const slash: number = filename.lastIndexOf('/');
+    const pos: number = slash === -1 ? filename.lastIndexOf('\\') : slash;
+    if (pos !== -1) {
+      this.fileDir = filename.substr(0, pos);
+      this.sourceFile = filename.substr(pos + 1);
+      console.log(this.fileDir, this.sourceFile);
+    }
+    const toks = this.tokenize(readFileSync(filename, {encoding: 'utf-8'}));
+    return [toks, false];
+  }
+
 }

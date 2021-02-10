@@ -85,15 +85,19 @@ export class Evaluator {
     return 0;
   }
 
+  private static RpnOp(type: OperatorType, arg: any) {
+    return new RpnElement(ElementType.OPERATOR, new Operator(type, arg));
+  }
+
   private nodeToElement(node: Node): RpnElement {
     const expr = node.toExpr();
     if (expr.isOperand()) {
       if (expr.type === ExprType.FUNC_CALL) {
-        return new RpnElement(ElementType.OPERATOR, new Operator(OperatorType.FUNC, expr.argsList));
+        return Evaluator.RpnOp(OperatorType.FUNC, expr.argsList);
       } else if (expr.type === ExprType.INDEX) {
-        return new RpnElement(ElementType.OPERATOR, new Operator(OperatorType.INDEX, expr.nodeExpressions))
+        return Evaluator.RpnOp(OperatorType.INDEX, expr.nodeExpressions);
       } else {
-        return new RpnElement(ElementType.OPERATOR, new Operator(OperatorType.BASIC, expr.op));
+        return Evaluator.RpnOp(OperatorType.BASIC, expr.op);
       }
     } else {
       // TODO

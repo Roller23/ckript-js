@@ -5,12 +5,15 @@ import { TokenType } from "./token";
 import { VarType } from "./utils";
 import { CVM, Variable } from "./vm";
 
-import * as fs from 'fs';
-
 export class Interpreter {
-  public processString(str: string, args: string[] = []): void {
-    const [AST, _] =  new Parser(new Lexer().tokenize(str), TokenType.NONE).parse();
-    console.log(AST);
+
+  public processFile(filename: string, args: string[] = []): void {
+    const [tokens, err] = new Lexer().processFile(filename);
+    if (err) {
+      console.log(`Couldn't open file ${filename}`);
+      process.exit(1);
+    }
+    const [AST] = new Parser(tokens, TokenType.NONE).parse();
     const evaluator: Evaluator = new Evaluator(AST, new CVM());
     evaluator.stack.argv = new Variable();
     evaluator.stack.argv.val.arrayType = 'str';
@@ -20,10 +23,6 @@ export class Interpreter {
       evaluator.stack.argv.val.arrayValues[i].value = args[i];
     }
     evaluator.start();
-  }
-
-  public processFile(filename: string, args: string[] = []): void {
-    this.processString(fs.readFileSync(filename, {encoding: 'utf-8'}), args);
   }
 }
 

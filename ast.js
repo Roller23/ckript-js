@@ -59,7 +59,7 @@ class Expression {
         this.funcExpr = null;
         this.arrayType = '';
         this.arrayHoldsRefs = false;
-        this.nodeExpression = null;
+        this.nodeExpressions = [];
         this.argsList = [];
         this.arraySize = [];
         this.op = token_1.TokenType.NONE;
@@ -69,11 +69,11 @@ class Expression {
             this.op = arg;
         }
         else if (this.type === ExprType.RPN) {
-            this.nodeExpression = arg;
+            this.nodeExpressions = arg;
         }
         else if (this.type === ExprType.INDEX) {
             this.op = token_1.TokenType.LEFT_BRACKET;
-            this.nodeExpression = arg;
+            this.nodeExpressions = arg;
         }
         else if (this.type === ExprType.BOOL_EXPR) {
             this.literal = arg;

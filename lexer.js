@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Lexer = void 0;
 const token_1 = require("./token");
 const error_handler_1 = require("./error-handler");
+const fs_1 = require("fs");
 class Lexer {
     constructor() {
         this.tokens = [];
@@ -10,6 +11,7 @@ class Lexer {
         this.prevDeletedSpaces = 0;
         this.currentLine = 0;
         this.sourceFile = '';
+        this.fileDir = '';
         this.ptr = 0;
         this.end = 0;
         this.code = '';
@@ -62,7 +64,25 @@ class Lexer {
                     }
                     this.ptr--;
                     const strTokenType = token_1.TokenType[tokenString.toUpperCase()];
-                    if (strTokenType !== undefined) {
+                    if (tokenString === 'include') {
+                        this.ptr++;
+                        this.consumeWhitespace();
+                        c = this.code[this.ptr];
+                        if (!(c === '"' || c === "'" || c === '`') || this.ptr === this.end || this.ptr + 1 === this.end) {
+                            this.throwError('Expected a string literal after include');
+                        }
+                        this.ptr++;
+                        let path = `${this.fileDir}`;
+                        while (this.code[this.ptr] !== c && this.ptr !== this.end) {
+                            path += this.code[this.ptr++];
+                        }
+                        const [toks, err] = new Lexer().processFile(path);
+                        if (err) {
+                            this.throwError(`Couldn't include file ${path}`);
+                        }
+                        this.tokens.push(...toks);
+                    }
+                    else if (strTokenType !== undefined) {
                         this.addToken(strTokenType, '');
                     }
                     else {
@@ -233,6 +253,20 @@ class Lexer {
             this.ptr++;
         }
         return this.tokens;
+    }
+    processFile(filename) {
+        if (!fs_1.existsSync(filename)) {
+            return [[], true];
+        }
+        this.sourceFile = filename;
+        const slash = filename.lastIndexOf('/');
+        const pos = slash === -1 ? filename.lastIndexOf('\\') : slash;
+        if (pos !== -1) {
+            this.fileDir = filename.substr(0, pos);
+            this.sourceFile = filename.substr(pos + 1);
+            console.log(this.fileDir, this.sourceFile);
+        }
+        return [this.tokenize(fs_1.readFileSync(filename, { encoding: 'utf-8' })), false];
     }
 }
 exports.Lexer = Lexer;

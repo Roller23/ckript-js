@@ -1,3 +1,3 @@
+include "other.ck"
 
-
-print('Hello\n');
+print('Hello');
