@@ -14,7 +14,7 @@ class Interpreter {
             console.log(`Couldn't open file ${filename}`);
             process.exit(1);
         }
-        const [AST, _] = new parser_1.Parser(tokens, token_1.TokenType.NONE).parse();
+        const [AST] = new parser_1.Parser(tokens, token_1.TokenType.NONE).parse();
         const evaluator = new evaluator_1.Evaluator(AST, new vm_1.CVM());
         evaluator.stack.argv = new vm_1.Variable();
         evaluator.stack.argv.val.arrayType = 'str';

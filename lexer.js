@@ -127,7 +127,7 @@ class Lexer {
                     if (negation && !this.prevDeletedSpaces) {
                         if (this.tokens.length !== 0) {
                             const t = this.tokens[this.tokens.length - 1].type;
-                            if (t === token_1.TokenType.IDENTIFIER || t === token_1.TokenType.BINARY || t === token_1.TokenType.DECIMAL || t === token_1.TokenType.OCTAL || t === token_1.TokenType.FLOAT || t === token_1.TokenType.LEFT_PAREN) {
+                            if (t === token_1.TokenType.IDENTIFIER || t === token_1.TokenType.BINARY || t === token_1.TokenType.DECIMAL || t === token_1.TokenType.FLOAT || t === token_1.TokenType.LEFT_PAREN) {
                                 negation = false;
                             }
                         }
@@ -254,6 +254,10 @@ class Lexer {
         }
         return this.tokens;
     }
+    /**
+     * @param filename input file
+     * @returns a tuple with tokens and boolean indicating an error
+     */
     processFile(filename) {
         if (!fs_1.existsSync(filename)) {
             return [[], true];
@@ -266,7 +270,8 @@ class Lexer {
             this.sourceFile = filename.substr(pos + 1);
             console.log(this.fileDir, this.sourceFile);
         }
-        return [this.tokenize(fs_1.readFileSync(filename, { encoding: 'utf-8' })), false];
+        const toks = this.tokenize(fs_1.readFileSync(filename, { encoding: 'utf-8' }));
+        return [toks, false];
     }
 }
 exports.Lexer = Lexer;

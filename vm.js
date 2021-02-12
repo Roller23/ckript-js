@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NativePrint = exports.CVM = exports.StackTrace = exports.Call = exports.Heap = exports.Cache = exports.Chunk = exports.Variable = exports.Value = void 0;
 const utils_1 = require("./utils");
 class Value {
-    constructor(type) {
+    constructor(type, value) {
         this.type = utils_1.VarType.UNKNOWN;
         this.heapRef = -1;
         this.thisRef = -1;
@@ -17,6 +17,9 @@ class Value {
         this.memberName = '';
         this.referenceName = '';
         this.type = type;
+        if (value) {
+            this.value = value;
+        }
     }
     isLvalue() {
         return this.referenceName.length !== 0;

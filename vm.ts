@@ -20,8 +20,11 @@ export class Value {
     return this.referenceName.length !== 0;
   }
 
-  constructor(type: VarType) {
+  constructor(type: VarType, value?: LiteralValue) {
     this.type = type;
+    if (value) {
+      this.value = value;
+    }
   }
 }
 
