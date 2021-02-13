@@ -552,16 +552,21 @@ export class Parser {
   private getExprNode(): Node {
     this.failIfEOF(TokenType.GENERAL_EXPRESSION);
     if (this.currToken.type === TokenType.FUNCTION) {
+      console.log('func node')
       return this.parseFuncExpression();
     } else if (this.currToken.type === TokenType.ARRAY) {
+      console.log('array node')
       return this.parseArrayExpression();
     } else if (this.currToken.type === TokenType.IDENTIFIER) {
+      console.log('id node')
       let id: Node = new Node(new Expression(ExprType.IDENTIFIER_EXPR, this.currToken.value));
       this.advance();
       return id;
     } else if (this.currToken.type === TokenType.LEFT_PAREN) {
+      console.log('checking left paren');
       if (this.prev.type === TokenType.RIGHT_PAREN || this.prev.type === TokenType.IDENTIFIER ||
         this.prev.type === TokenType.RIGHT_BRACKET || this.prev.type === TokenType.STRING_LITERAL) {
+          console.log('fc node')
           let fc: Node[] = [];
           let call: Node = new Node(new Expression(ExprType.FUNC_CALL, fc));
           this.advance(); // skip the (
@@ -569,28 +574,39 @@ export class Parser {
           expr.argsList = this.getManyExpressions(TokenType.COMMA, TokenType.RIGHT_PAREN);
           this.advance(); // skip the )
           return call;
+        } else {
+          console.log('lparen node')
+          this.advance(); // skip the (
+          const rpn: Node[] = this.getExpression(TokenType.RIGHT_PAREN);
+          this.advance(); // skip the )
+          return new Node(new Expression(ExprType.RPN, rpn));
         }
     } else if (this.currToken.type === TokenType.LEFT_BRACKET) {
+      console.log('index node')
       this.advance(); // skip the [
       let rpn: Node[] = this.getExpression(TokenType.RIGHT_BRACKET);
       this.advance(); // skip the ]
       let index: Node = new Node(new Expression(ExprType.INDEX, rpn));
       return index;
     } else if (this.currToken.type === TokenType.STRING_LITERAL) {
+      console.log('str node')
       let strLiteral: Node = new Node(new Expression(ExprType.STR_EXPR, this.currToken.value));
       this.advance();
       return strLiteral;
     } else if (Utils.opUnary(this.currToken.type)) {
+      console.log('unary node')
       const tokenType: TokenType = this.currToken.type;
       this.advance(); // skip the op
       this.failIfEOF(TokenType.GENERAL_EXPRESSION);
       return new Node(new Expression(ExprType.UNARY_OP, tokenType));
     } else if (Utils.opBinary(this.currToken.type)) {
+      console.log('binary node')
       const tokenType: TokenType = this.currToken.type;
       this.advance(); // skip the op
       this.failIfEOF(TokenType.GENERAL_EXPRESSION);
       return new Node(new Expression(ExprType.BINARY_OP, tokenType));
     } else if (Utils.isNumber(this.currToken.type)) {
+      console.log('num node')
       const isNegative: boolean = this.currToken.value[0] === '-';
       let arg: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
@@ -600,6 +616,7 @@ export class Parser {
       this.advance(); // skip the number
       return numLiteral;
     } else if (this.currToken.type === TokenType.FLOAT) {
+      console.log('float node')
       const isNegative: boolean = this.currToken.value[0] === '-';
       let float: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
@@ -609,14 +626,10 @@ export class Parser {
       this.advance(); // skip the float
       return floatLiteral;
     } else if (this.currToken.type === TokenType.TRUE || this.currToken.type === TokenType.FALSE) {
+      console.log('bool node')
       const boolean: Node = new Node(new Expression(ExprType.BOOL_EXPR, this.currToken.type === TokenType.TRUE));
       this.advance(); // skip the boolean
       return boolean;
-    } else if (this.currToken.type === TokenType.LEFT_PAREN) {
-      this.advance(); // skip the (
-      const rpn: Node[] = this.getExpression(TokenType.RIGHT_PAREN);
-      this.advance(); // skip the )
-      return new Node(new Expression(ExprType.RPN, rpn));
     }
     this.throwError(`expected an expression, but ${this.currToken.getName()} found`, this.currToken);
     return new Node(null);

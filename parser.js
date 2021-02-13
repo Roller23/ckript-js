@@ -562,19 +562,24 @@ class Parser {
     getExprNode() {
         this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
         if (this.currToken.type === token_1.TokenType.FUNCTION) {
+            console.log('func node');
             return this.parseFuncExpression();
         }
         else if (this.currToken.type === token_1.TokenType.ARRAY) {
+            console.log('array node');
             return this.parseArrayExpression();
         }
         else if (this.currToken.type === token_1.TokenType.IDENTIFIER) {
+            console.log('id node');
             let id = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.IDENTIFIER_EXPR, this.currToken.value));
             this.advance();
             return id;
         }
         else if (this.currToken.type === token_1.TokenType.LEFT_PAREN) {
+            console.log('checking left paren');
             if (this.prev.type === token_1.TokenType.RIGHT_PAREN || this.prev.type === token_1.TokenType.IDENTIFIER ||
                 this.prev.type === token_1.TokenType.RIGHT_BRACKET || this.prev.type === token_1.TokenType.STRING_LITERAL) {
+                console.log('fc node');
                 let fc = [];
                 let call = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.FUNC_CALL, fc));
                 this.advance(); // skip the (
@@ -583,8 +588,16 @@ class Parser {
                 this.advance(); // skip the )
                 return call;
             }
+            else {
+                console.log('lparen node');
+                this.advance(); // skip the (
+                const rpn = this.getExpression(token_1.TokenType.RIGHT_PAREN);
+                this.advance(); // skip the )
+                return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.RPN, rpn));
+            }
         }
         else if (this.currToken.type === token_1.TokenType.LEFT_BRACKET) {
+            console.log('index node');
             this.advance(); // skip the [
             let rpn = this.getExpression(token_1.TokenType.RIGHT_BRACKET);
             this.advance(); // skip the ]
@@ -592,23 +605,27 @@ class Parser {
             return index;
         }
         else if (this.currToken.type === token_1.TokenType.STRING_LITERAL) {
+            console.log('str node');
             let strLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.STR_EXPR, this.currToken.value));
             this.advance();
             return strLiteral;
         }
         else if (utils_1.Utils.opUnary(this.currToken.type)) {
+            console.log('unary node');
             const tokenType = this.currToken.type;
             this.advance(); // skip the op
             this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
             return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.UNARY_OP, tokenType));
         }
         else if (utils_1.Utils.opBinary(this.currToken.type)) {
+            console.log('binary node');
             const tokenType = this.currToken.type;
             this.advance(); // skip the op
             this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
             return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BINARY_OP, tokenType));
         }
         else if (utils_1.Utils.isNumber(this.currToken.type)) {
+            console.log('num node');
             const isNegative = this.currToken.value[0] === '-';
             let arg = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
@@ -619,6 +636,7 @@ class Parser {
             return numLiteral;
         }
         else if (this.currToken.type === token_1.TokenType.FLOAT) {
+            console.log('float node');
             const isNegative = this.currToken.value[0] === '-';
             let float = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
@@ -629,15 +647,10 @@ class Parser {
             return floatLiteral;
         }
         else if (this.currToken.type === token_1.TokenType.TRUE || this.currToken.type === token_1.TokenType.FALSE) {
+            console.log('bool node');
             const boolean = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BOOL_EXPR, this.currToken.type === token_1.TokenType.TRUE));
             this.advance(); // skip the boolean
             return boolean;
-        }
-        else if (this.currToken.type === token_1.TokenType.LEFT_PAREN) {
-            this.advance(); // skip the (
-            const rpn = this.getExpression(token_1.TokenType.RIGHT_PAREN);
-            this.advance(); // skip the )
-            return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.RPN, rpn));
         }
         this.throwError(`expected an expression, but ${this.currToken.getName()} found`, this.currToken);
         return new ast_1.Node(null);
