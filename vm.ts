@@ -4,7 +4,7 @@ import { Evaluator } from "./evaluator";
 
 export class Value {
   public type: VarType = VarType.UNKNOWN;
-  public value: LiteralValue;
+  public value: LiteralValue = undefined;
   public heapRef: number = -1;
   public thisRef: number = -1;
   public func: FuncExpression | null = null;

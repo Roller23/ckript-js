@@ -3,7 +3,7 @@ import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { TokenType } from "./token";
 import { VarType } from "./utils";
-import { CVM, Variable } from "./vm";
+import { CVM, Value, Variable } from "./vm";
 
 export class Interpreter {
 
@@ -15,12 +15,11 @@ export class Interpreter {
     }
     const [AST] = new Parser(tokens, TokenType.NONE).parse();
     const evaluator: Evaluator = new Evaluator(AST, new CVM());
-    evaluator.stack.argv = new Variable();
-    evaluator.stack.argv.val.arrayType = 'str';
-    evaluator.stack.argv.val.type = VarType.ARR;
+    const val: Value = (evaluator.stack.argv = new Variable()).val;
+    val.arrayType = 'str';
+    val.type = VarType.ARR;
     for (let i = 0; i < args.length; i++) {
-      evaluator.stack.argv.val.arrayValues[i].type = VarType.STR;
-      evaluator.stack.argv.val.arrayValues[i].value = args[i];
+      val.arrayValues.push(new Value(VarType.STR, args[i]));
     }
     evaluator.start();
   }

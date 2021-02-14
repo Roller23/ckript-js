@@ -5,6 +5,7 @@ const utils_1 = require("./utils");
 class Value {
     constructor(type, value) {
         this.type = utils_1.VarType.UNKNOWN;
+        this.value = undefined;
         this.heapRef = -1;
         this.thisRef = -1;
         this.func = null;

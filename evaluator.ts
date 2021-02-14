@@ -1072,7 +1072,7 @@ export class Evaluator {
     return new RpnElement(ElementType.UNKNOWN);
   }
 
-  private flattenTree(res: RpnStack, expressionTree: Node[]): void {
+  private flattenTree(res: RpnStack, expressionTree: Node[]): RpnStack {
     for (const node of expressionTree) {
       const expr = node.toExpr();
       if (expr.nodeExpressions.length !== 0) {
@@ -1082,11 +1082,11 @@ export class Evaluator {
         res.push(this.nodeToElement(node));
       }
     }
+    return res;
   }
 
   private evaluateExpression(expressionTree: Node[], getRef: boolean = false): Value {
-    let rpnStack: RpnStack = [];
-    this.flattenTree(rpnStack, expressionTree);
+    let rpnStack: RpnStack = this.flattenTree([], expressionTree);
     let resStack: RpnStack = [];
     for (const token of rpnStack) {
       if (token.type === ElementType.OPERATOR) {

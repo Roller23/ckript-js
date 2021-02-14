@@ -194,6 +194,68 @@ class Evaluator {
         }
         return val; // Unknown, void, or class
     }
+    setMember(members, expression) {
+        const base = members[0];
+        let _var = this.getReferenceByName(base);
+        if (_var === null) {
+            this.throwError(`'${base}' is not defined`);
+        }
+        let val = _var.val.heapRef !== -1 ? this.getHeapVal(_var.val.heapRef) : _var?.val;
+        let references = [val];
+        let i = 0;
+        let prev = members[0];
+        for (const member of members) {
+            if (i++ === 0)
+                continue;
+            let temp = references[references.length - 1];
+            temp = temp.heapRef !== -1 ? this.getHeapVal(temp.heapRef) : temp;
+            if (temp.type !== utils_1.VarType.OBJ) {
+                this.throwError(`${this.stringify(temp)} is not an object`);
+            }
+            if (!(member in temp.memberValues)) {
+                this.throwError(`${prev} has no member '${member}'`);
+            }
+            references.push(temp.memberValues[member]);
+            prev = member;
+        }
+        const rvalue = this.evaluateExpression(expression);
+        let fin = references[references.length - 1];
+        fin = fin.heapRef !== -1 ? this.getHeapVal(fin.heapRef) : fin;
+        if (fin.type !== rvalue.type) {
+            this.throwError(`Cannot assign ${this.stringify(rvalue)}, incorrect type`);
+        }
+        Object.assign(fin, rvalue);
+    }
+    setIndex(stmt) {
+        let arr = this.getReferenceByName(stmt.objMembers[0]);
+        if (arr === null) {
+            this.throwError(`'${stmt.objMembers[0]}' is not defined`);
+        }
+        let val = arr.val.heapRef !== -1 ? this.getHeapVal(arr.val.heapRef) : arr.val;
+        let references = [val];
+        for (const index of stmt.indexes) {
+            let temp = references[references.length - 1];
+            temp = temp.heapRef !== -1 ? this.getHeapVal(temp.heapRef) : temp;
+            if (temp.type !== utils_1.VarType.ARR) {
+                this.throwError(`${this.stringify(temp)} is not an array`);
+            }
+            const indexVal = this.evaluateExpression(index.toExpr().nodeExpressions); // not sure
+            if (indexVal.type !== utils_1.VarType.INT) {
+                this.throwError(`Cannot access array with ${this.stringify(indexVal)}`);
+            }
+            if (indexVal.value < 0 || indexVal.value >= temp.arrayValues.length) {
+                this.throwError(`Index [${indexVal.value}] out of range`);
+            }
+            references.push(temp.arrayValues[indexVal.value]);
+        }
+        const rvalue = this.evaluateExpression(stmt.expressions[0]);
+        let fin = references[references.length - 1];
+        fin = fin.heapRef !== -1 ? this.getHeapVal(fin.heapRef) : fin;
+        if (fin.type !== rvalue.type) {
+            this.throwError(`Cannot assign ${this.stringify(rvalue)}, incorrect type`);
+        }
+        Object.assign(fin, rvalue);
+    }
     logicalNot(x) {
         const xVal = this.getValue(x);
         if (xVal.type === utils_1.VarType.BOOL) {
@@ -805,11 +867,11 @@ class Evaluator {
         else if (stmt.type === ast_1.StmtType.SET) {
             if (stmt.expressions.length === 0)
                 return Evaluator.FLAG_OK;
-            // this.setMember(stmt.objMembers, stmt.expressions); TODO
+            this.setMember(stmt.objMembers, stmt.expressions[0]);
             return Evaluator.FLAG_OK;
         }
         else if (stmt.type === ast_1.StmtType.SET_IDX) {
-            // this.setIndex(stmt); TODO
+            this.setIndex(stmt);
             return Evaluator.FLAG_OK;
         }
         else if (stmt.type === ast_1.StmtType.DECL) {
@@ -1047,10 +1109,10 @@ class Evaluator {
                 res.push(this.nodeToElement(node));
             }
         }
+        return res;
     }
     evaluateExpression(expressionTree, getRef = false) {
-        let rpnStack = [];
-        this.flattenTree(rpnStack, expressionTree);
+        let rpnStack = this.flattenTree([], expressionTree);
         let resStack = [];
         for (const token of rpnStack) {
             if (token.type === ElementType.OPERATOR) {

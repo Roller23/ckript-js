@@ -16,12 +16,11 @@ class Interpreter {
         }
         const [AST] = new parser_1.Parser(tokens, token_1.TokenType.NONE).parse();
         const evaluator = new evaluator_1.Evaluator(AST, new vm_1.CVM());
-        evaluator.stack.argv = new vm_1.Variable();
-        evaluator.stack.argv.val.arrayType = 'str';
-        evaluator.stack.argv.val.type = utils_1.VarType.ARR;
+        const val = (evaluator.stack.argv = new vm_1.Variable()).val;
+        val.arrayType = 'str';
+        val.type = utils_1.VarType.ARR;
         for (let i = 0; i < args.length; i++) {
-            evaluator.stack.argv.val.arrayValues[i].type = utils_1.VarType.STR;
-            evaluator.stack.argv.val.arrayValues[i].value = args[i];
+            val.arrayValues.push(new vm_1.Value(utils_1.VarType.STR, args[i]));
         }
         evaluator.start();
     }
