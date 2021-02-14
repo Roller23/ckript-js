@@ -6,7 +6,7 @@ export class Lexer {
   private tokens: Token[] = [];
   private deletedSpaces: number = 0;
   private prevDeletedSpaces: number = 0;
-  private currentLine: number = 0;
+  private currentLine: number = 1;
   private sourceFile: string = '';
   private fileDir: string = '';
   private ptr: number = 0;
@@ -63,8 +63,7 @@ export class Lexer {
   }
 
   private addToken(type: TokenType, value: string): void {
-    this.tokens.push(new Token(type, value, '', this.currentLine));
-    console.log('added', this.tokens[this.tokens.length - 1].getKeyName(), value);
+    this.tokens.push(new Token(type, value, this.sourceFile, this.currentLine));
   }
 
   tokenize(code: string): Token[] {

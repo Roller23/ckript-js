@@ -1,5 +1,6 @@
 import { VarType } from "./utils"
 import { FuncExpression, FuncParam, LiteralValue } from './ast'
+import { Evaluator } from "./evaluator";
 
 export class Value {
   public type: VarType = VarType.UNKNOWN;
@@ -22,7 +23,7 @@ export class Value {
 
   constructor(type: VarType, value?: LiteralValue) {
     this.type = type;
-    if (value) {
+    if (value !== undefined) {
       this.value = value;
     }
   }
@@ -111,14 +112,15 @@ export class StackTrace {
 }
 
 interface NativeFunction {
-  execute(args: Value[], VM: CVM, ev: any): Value;
+  execute(args: Value[], ev: Evaluator): Value;
 }
 
 export class CVM {
   public heap: Heap = new Heap();
   public trace: StackTrace = new StackTrace();
   public globals: {[key: string]: NativeFunction} = {
-    ['println']: new NativePrint()
+    ['print']: new NativePrint(),
+    ['println']: new NativePrintln()
   };
   public stringify(val: Value): string {
     if (val.heapRef !== -1) {
@@ -181,16 +183,31 @@ export class CVM {
   }
 }
 
-export class NativePrint implements NativeFunction {
-  public execute(args: Value[], VM: CVM, ev: any): Value {
+class NativePrint implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
     if (args.length === 0) {
-      throw new Error('lel!');
+      ev.throwError('print(any) expects at least one argument');
     }
     let i: number = 0;
     const endIndex: number = args.length - 1;
     for (const arg of args) {
-      process.stdout.write(`${VM.stringify(arg)}${i !== endIndex ? ' ' : ''}`);
+      process.stdout.write(`${ev.VM.stringify(arg)}${i !== endIndex ? ' ' : ''}`);
     }
+    return new Value(VarType.VOID);
+  }
+}
+
+class NativePrintln implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length === 0) {
+      ev.throwError('println(any) expects at least one argument');
+    }
+    let i: number = 0;
+    const endIndex: number = args.length - 1;
+    for (const arg of args) {
+      process.stdout.write(`${ev.VM.stringify(arg)}${i !== endIndex ? ' ' : ''}`);
+    }
+    process.stdout.write('\n');
     return new Value(VarType.VOID);
   }
 }

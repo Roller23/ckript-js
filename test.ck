@@ -1,1 +1,7 @@
-(2 + 2 + 3 - 5 * 10) / 43;
+include 'other.ck'
+
+int i = 0;
+
+for (; i <= 25; i += 1) {
+  println(fib(i));
+}

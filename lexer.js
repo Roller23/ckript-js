@@ -9,7 +9,7 @@ class Lexer {
         this.tokens = [];
         this.deletedSpaces = 0;
         this.prevDeletedSpaces = 0;
-        this.currentLine = 0;
+        this.currentLine = 1;
         this.sourceFile = '';
         this.fileDir = '';
         this.ptr = 0;
@@ -39,8 +39,7 @@ class Lexer {
         }
     }
     addToken(type, value) {
-        this.tokens.push(new token_1.Token(type, value, '', this.currentLine));
-        console.log('added', this.tokens[this.tokens.length - 1].getKeyName(), value);
+        this.tokens.push(new token_1.Token(type, value, this.sourceFile, this.currentLine));
     }
     tokenize(code) {
         this.ptr = 0;

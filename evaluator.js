@@ -65,11 +65,17 @@ class Evaluator {
         this.AST = AST;
     }
     throwError(cause) {
-        error_handler_1.ErrorHandler.throwError(`Runtime error: ${cause} on ${this.currentLine} in file ${this.currentSource}`);
+        error_handler_1.ErrorHandler.throwError(`Runtime error: ${cause} on line ${this.currentLine} in file ${this.currentSource}`);
     }
     getHeapVal(ref) {
-        // TODO
-        return new vm_1.Value(utils_1.VarType.UNKNOWN);
+        if (ref < 0 || ref >= this.VM.heap.chunks.length) {
+            this.throwError('Dereferencing a value that is not on the heap');
+        }
+        const ptr = this.VM.heap.chunks[ref].data;
+        if (ptr === null) {
+            this.throwError('Dereferencing a null pointer');
+        }
+        return ptr;
     }
     getReferenceByName(name) {
         if (name in this.VM.globals) {
@@ -88,7 +94,7 @@ class Evaluator {
             if (_var === null) {
                 this.throwError(`'${el.value.referenceName}' is not defined`);
             }
-            if (_var.val.heapRef) {
+            if (_var.val.heapRef !== -1) {
                 return this.getHeapVal(_var.val.heapRef);
             }
             return _var.val;
@@ -588,7 +594,7 @@ class Evaluator {
             _var.constant = decl.isConstant;
             chunk.data = varVal;
             if (varVal.type === utils_1.VarType.OBJ) {
-                // TODO: bind 'this'
+                this.VM.globals.bind.execute([_var.val], this);
             }
             return;
         }
@@ -596,6 +602,178 @@ class Evaluator {
         _var.type = decl.varType;
         _var.val = varVal;
         _var.constant = decl.isConstant;
+    }
+    constructObject(call, _class) {
+        let val = new vm_1.Value(utils_1.VarType.OBJ);
+        const classVal = this.getValue(_class);
+        let argsCounter = 0;
+        for (const arg of call.op.funcCall) {
+            if (arg.length !== 0) {
+                argsCounter++;
+            }
+            else {
+                this.throwError('Illegal class invocation, missing members');
+            }
+        }
+        const membersCount = classVal.members.length;
+        if (argsCounter !== membersCount) {
+            this.throwError(`${_class.value.referenceName} has ${membersCount} members, ${argsCounter} given`);
+        }
+        val.className = _class.value.referenceName;
+        let i = 0;
+        for (const nodeList of call.op.funcCall) {
+            const member = classVal.members[i];
+            const argVal = this.evaluateExpression(nodeList, member.isRef);
+            let realVal = argVal;
+            let argType = argVal.type;
+            if (argVal.heapRef !== -1) {
+                realVal = this.getHeapVal(argVal.heapRef);
+                argType = realVal.type;
+            }
+            if (member.isRef && argVal.heapRef === -1) {
+                this.throwError(`Object argument ${i + 1} expected to be a reference, but value given`);
+            }
+            if (argType !== utils_1.Utils.varLUT[member.typeName]) {
+                this.throwError(`Argument ${i + 1} expected to be ${member.typeName}, but ${this.stringify(realVal)} given`);
+            }
+            argVal.memberName = member.paramName;
+            val.memberValues[member.paramName] = argVal;
+            i++;
+        }
+        return Evaluator.RpnVal(val);
+    }
+    executeFunction(fn, call) {
+        const isGlobal = fn.value.referenceName in this.VM.globals;
+        if (fn.value.isLvalue() && isGlobal) {
+            let callArgs = [];
+            const needsRef = fn.value.referenceName === 'bind';
+            for (const nodeList of call.op.funcCall) {
+                if (nodeList.length === 0)
+                    break;
+                callArgs.push(this.evaluateExpression(nodeList, needsRef));
+            }
+            this.VM.trace.push(fn.value.referenceName, this.currentLine, this.currentSource);
+            const returnVal = this.VM.globals[fn.value.referenceName].execute(callArgs, this);
+            this.VM.trace.pop();
+            return Evaluator.RpnVal(returnVal);
+        }
+        let fnValue = this.getValue(fn);
+        if (fnValue.type === utils_1.VarType.CLASS) {
+            return this.constructObject(call, fn);
+        }
+        if (fnValue.type === utils_1.VarType.STR) {
+            let args = 0;
+            for (const arg of call.op.funcCall) {
+                if (arg.length !== 0) {
+                    args++;
+                }
+                else if (args !== 0) {
+                    this.throwError('Illegal string interpolation, missing arguments');
+                }
+            }
+            let str = Evaluator.makeCopy(fnValue);
+            if (args == 0)
+                return Evaluator.RpnVal(str);
+            let argn = 1;
+            for (const arg of call.op.funcCall) {
+                const argVal = this.evaluateExpression(arg);
+                const find = '@' + argn;
+                str.value = str.value.replace(new RegExp(find, 'g'), this.VM.stringify(argVal));
+                argn++;
+            }
+            return Evaluator.RpnVal(str);
+        }
+        if (fnValue.type !== utils_1.VarType.FUNC) {
+            this.throwError(`${this.stringify(fnValue)} is not a function or a string`);
+        }
+        if (fnValue.func.instructions.length === 0) {
+            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.UNKNOWN));
+        }
+        let argsCounter = 0;
+        for (const arg of call.op.funcCall) {
+            if (arg.length !== 0) {
+                argsCounter++;
+            }
+            else if (argsCounter !== 0) {
+                this.throwError('Illegal function invocation, missing arguments');
+            }
+        }
+        if (argsCounter !== fnValue.func.params.length) {
+            this.throwError(`${this.stringify(fnValue)} expects ${fnValue.func.params.length}, but ${argsCounter} given`);
+        }
+        let funcEvaluator = new Evaluator(fnValue.func.instructions[0], this.VM);
+        funcEvaluator.insideFunc = true;
+        funcEvaluator.returnsRef = fnValue.func.retRef;
+        if (fnValue.func.params.length !== 0) {
+            let i = 0;
+            for (const nodeList of call.op.funcCall) {
+                const argVal = this.evaluateExpression(nodeList, fnValue.func.params[i].isRef);
+                if (fnValue.func.params[i].isRef && argVal.heapRef === -1) {
+                    this.throwError(`Argument ${i + 1} expected to be a reference, but value given`);
+                }
+                let argType = argVal.type;
+                if (argType !== utils_1.Utils.varLUT[fnValue.func.params[i].typeName]) {
+                    let realVal = Evaluator.makeCopy(argVal);
+                    if (argVal.heapRef !== -1) {
+                        realVal = this.getHeapVal(argVal.heapRef);
+                        argType = realVal.type;
+                    }
+                    this.throwError(`Argument ${i + 1} expected to be ${fnValue.func.params[i].typeName}, but ${this.stringify(realVal)} given`);
+                }
+                let _var = (funcEvaluator.stack[fnValue.func.params[i].paramName] = new vm_1.Variable());
+                _var.type = fnValue.func.params[i].typeName;
+                _var.val = argVal;
+                i++;
+            }
+        }
+        if (fn.value.isLvalue()) {
+            funcEvaluator.stack[fn.value.referenceName] = this.stack[fn.value.referenceName];
+        }
+        if (fnValue.thisRef !== -1) {
+            let _var = (funcEvaluator.stack['this'] = new vm_1.Variable());
+            _var.type = 'obj';
+            _var.val.heapRef = fnValue.thisRef;
+        }
+        if (fnValue.func.capturess) {
+            Object.keys(this.stack).forEach((key) => {
+                if (key === 'this')
+                    return;
+                if (fn.value.isLvalue() && key === fn.value.referenceName)
+                    return;
+                let contains = false;
+                for (const p of fnValue.func.params) {
+                    if (p.paramName === key) {
+                        contains = true;
+                        break;
+                    }
+                }
+                if (contains)
+                    return;
+                funcEvaluator.stack[key] = this.stack[key];
+            });
+        }
+        const fnName = fn.value.isLvalue() ? fn.value.referenceName : fnValue.funcName;
+        this.VM.trace.push(fnName, this.currentLine, this.currentSource);
+        funcEvaluator.start();
+        if (fnValue.func.retRef) {
+            if (funcEvaluator.returnValue.heapRef === -1) {
+                this.throwError(`function returns a reference, but ${this.stringify(funcEvaluator.returnValue)} was returned`);
+                return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.UNKNOWN));
+            }
+            const heapVal = this.getHeapVal(funcEvaluator.returnValue.heapRef);
+            if (heapVal.type !== utils_1.Utils.varLUT[fnValue.func.retType]) {
+                this.throwError(`function return type is ref ${fnValue.func.retType}, but ${this.stringify(funcEvaluator.returnValue)} was returned`);
+                return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.UNKNOWN));
+            }
+            this.VM.trace.pop();
+            return Evaluator.RpnVal(funcEvaluator.returnValue);
+        }
+        if (funcEvaluator.returnValue.type !== utils_1.Utils.varLUT[fnValue.func.retType]) {
+            this.throwError(`function return type is ${fnValue.func.retType}, but ${this.stringify(funcEvaluator.returnValue)} was returned`);
+            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.UNKNOWN));
+        }
+        this.VM.trace.pop();
+        return Evaluator.RpnVal(funcEvaluator.returnValue);
     }
     start() {
         for (const statement of this.AST.children) {
@@ -618,10 +796,144 @@ class Evaluator {
             if (stmt.expressions.length !== 1)
                 return Evaluator.FLAG_OK;
             const res = this.evaluateExpression(stmt.expressions[0]);
-            console.log('expression result:', res.value);
             return Evaluator.FLAG_OK;
         }
-        return 0;
+        else if (stmt.type === ast_1.StmtType.CLASS) {
+            this.registerClass(stmt.classStmt);
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.SET) {
+            if (stmt.expressions.length === 0)
+                return Evaluator.FLAG_OK;
+            // this.setMember(stmt.objMembers, stmt.expressions); TODO
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.SET_IDX) {
+            // this.setIndex(stmt); TODO
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.DECL) {
+            if (stmt.statements.length !== 1)
+                return Evaluator.FLAG_OK;
+            this.declareVariable(stmt.statements[0]);
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.COMPOUND) {
+            if (stmt.statements.length === 0)
+                return Evaluator.FLAG_OK;
+            for (const s of stmt.statements[0].children) {
+                const flag = this.executeStatement(s);
+                if (flag)
+                    return flag;
+            }
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.BREAK) {
+            if (!this.nestedLoops) {
+                this.throwError('Break statement outside of loops is illegal');
+            }
+            return Evaluator.FLAG_BREAK;
+        }
+        else if (stmt.type === ast_1.StmtType.CONTINUE) {
+            if (!this.nestedLoops) {
+                this.throwError('Continue statement outside of loops is illegal');
+            }
+            return Evaluator.FLAG_CONTINUE;
+        }
+        else if (stmt.type === ast_1.StmtType.RETURN) {
+            if (!this.insideFunc) {
+                this.throwError('Return statement outside of functions is illegal');
+            }
+            const returnExpr = stmt.expressions[0];
+            if (stmt.expressions.length !== 0 && returnExpr.length !== 0) {
+                this.returnValue = this.evaluateExpression(returnExpr, this.returnsRef);
+            }
+            return Evaluator.FLAG_RETURN;
+        }
+        else if (stmt.type === ast_1.StmtType.WHILE) {
+            if (stmt.statements.length === 0)
+                return Evaluator.FLAG_OK;
+            if (stmt.expressions[0].length === 0) {
+                this.throwError('While expects an expression');
+            }
+            this.nestedLoops++;
+            while (true) {
+                const result = this.evaluateExpression(stmt.expressions[0]);
+                if (result.type !== utils_1.VarType.BOOL) {
+                    this.throwError(`Expected a boolean value in while statement, found ${this.stringify(result)}`);
+                }
+                if (!result.value)
+                    break;
+                const flag = this.executeStatement(stmt.statements[0]);
+                if (flag === Evaluator.FLAG_BREAK)
+                    break;
+                if (flag === Evaluator.FLAG_RETURN)
+                    return flag;
+            }
+            this.nestedLoops--;
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.FOR) {
+            if (stmt.expressions.length !== 3) {
+                this.throwError(`For statement expects 3 expressions, ${stmt.expressions.length} given`);
+            }
+            if (stmt.statements.length === 0)
+                return Evaluator.FLAG_OK;
+            if (stmt.expressions[0].length !== 0) {
+                this.evaluateExpression(stmt.expressions[0]);
+            }
+            this.nestedLoops++;
+            const cond = stmt.expressions[1];
+            const autoTrue = cond.length === 0;
+            while (true) {
+                if (!autoTrue) {
+                    // console.log('for evaluates', cond)
+                    const result = this.evaluateExpression(cond);
+                    if (result.type !== utils_1.VarType.BOOL) {
+                        this.throwError(`Expected a boolean value in while statement, found ${this.stringify(result)}`);
+                    }
+                    if (!result.value)
+                        break;
+                }
+                const flag = this.executeStatement(stmt.statements[0]);
+                if (flag === Evaluator.FLAG_BREAK)
+                    break;
+                if (flag === Evaluator.FLAG_RETURN)
+                    return flag;
+                const incrementExpr = stmt.expressions[2];
+                if (incrementExpr.length !== 0) {
+                    this.evaluateExpression(incrementExpr);
+                }
+            }
+            this.nestedLoops--;
+            return Evaluator.FLAG_OK;
+        }
+        else if (stmt.type === ast_1.StmtType.IF) {
+            if (stmt.statements.length === 0)
+                return Evaluator.FLAG_OK;
+            if (stmt.expressions[0].length === 0) {
+                this.throwError('If statement expects an expression');
+            }
+            const result = this.evaluateExpression(stmt.expressions[0]);
+            if (result.type !== utils_1.VarType.BOOL) {
+                this.throwError(`Expected a boolean value in if statement, found ${this.stringify(result)}`);
+            }
+            if (result.value) {
+                const flag = this.executeStatement(stmt.statements[0]);
+                if (flag)
+                    return flag;
+            }
+            else {
+                if (stmt.statements.length === 2) {
+                    const flag = this.executeStatement(stmt.statements[1]);
+                    if (flag)
+                        return flag;
+                }
+            }
+            return Evaluator.FLAG_OK;
+        }
+        this.throwError(`Unknown statement! (${stmt.type})`);
+        return Evaluator.FLAG_ERROR;
     }
     static RpnOp(type, arg) {
         return new RpnElement(ElementType.OPERATOR, new Operator(type, arg));
@@ -845,14 +1157,27 @@ class Evaluator {
                             this.throwError(`Operator ${token_1.Token.getName(token.op.type)} expects one operand`);
                         }
                         const x = resStack.pop();
-                        // TODO
+                        if (token.op.type === token_1.TokenType.OP_NOT) {
+                            resStack.push(this.logicalNot(x));
+                        }
+                        else if (token.op.type === token_1.TokenType.OP_NEG) {
+                            resStack.push(this.bitwiseNot(x));
+                        }
+                        else if (token.op.type === token_1.TokenType.DEL) {
+                            resStack.push(this.deleteValue(x));
+                        }
+                        else {
+                            this.throwError(`Uknkown unary operator ${token_1.Token.getName(token.op.type)}`);
+                        }
                     }
                 }
                 else if (token.op.opType === OperatorType.FUNC) {
-                    // TODO
+                    const fn = resStack.pop();
+                    resStack.push(this.executeFunction(fn, token));
                 }
                 else if (token.op.opType === OperatorType.INDEX) {
-                    // TODO
+                    const arr = resStack.pop();
+                    resStack.push(this.accessIndex(arr, token));
                 }
             }
             else {

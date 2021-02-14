@@ -130,10 +130,8 @@ export class Parser {
     if (this.currToken.type === stop) {
       return prev;
     } else if (this.currToken.type === TokenType.CLASS) {
-      console.log('parsing class');
       return this.parseClassStmt();
     } else if (this.currToken.type === TokenType.SET) {
-      console.log('parsing set');
       let set: Node = new Node(new Statement(StmtType.SET));
       let stmt = set.toStmt();
       stmt.line = this.currToken.line;
@@ -161,7 +159,6 @@ export class Parser {
       this.advance(); // skip the ;
       return set;
     } else if (this.currToken.type === TokenType.SET_IDX) {
-      console.log('parsing set idx')
       let setIdx: Node = new Node(new Statement(StmtType.SET_IDX));
       let stmt = setIdx.toStmt();
       stmt.line = this.currToken.line;
@@ -185,7 +182,6 @@ export class Parser {
       this.advance(); // skip the ;
       return setIdx;
     } else if (this.currToken.type === TokenType.LEFT_BRACE) {
-      console.log('parsing compound')
       let comp: Node = new Node(new Statement(StmtType.COMPOUND));
       let stmt = comp.toStmt();
       stmt.source = this.currToken.source;
@@ -200,7 +196,6 @@ export class Parser {
       this.advance(); // skip the }
       return comp;
     } else if (this.currToken.type === TokenType.IF) {
-      console.log('parsing if')
       const line: number = this.currToken.line;
       const source: string = this.currToken.source;
       this.advance(); // skip the if
@@ -221,7 +216,6 @@ export class Parser {
       }
       return ifStmt;
     } else if (this.currToken.type === TokenType.WHILE) {
-      console.log('parsing while');
       const line: number = this.currToken.line;
       const source: string = this.currToken.source;
       this.advance(); // skip the while
@@ -238,7 +232,6 @@ export class Parser {
       stmt.statements.push(this.getStatement(prev, stop));
       return whileStmt;
     } else if (this.currToken.type === TokenType.FOR) {
-      console.log('parsing for');
       const line: number = this.currToken.line;
       const source: string = this.currToken.source;
       this.advance(); // skip the for
@@ -255,7 +248,6 @@ export class Parser {
       stmt.statements.push(this.getStatement(prev, stop));
       return forStmt;
     } else if (this.currToken.type === TokenType.RETURN) {
-      console.log('parsing return');
       let returnStmt: Node = new Node(new Statement(StmtType.RETURN));
       let stmt = returnStmt.toStmt();
       stmt.line = this.currToken.line;
@@ -265,7 +257,6 @@ export class Parser {
       this.advance(); // skip the semicolon
       return returnStmt;
     } else if (this.currToken.type === TokenType.BREAK) {
-      console.log('parsing break');
       const line: number = this.currToken.line;
       const source: string = this.currToken.source;
       this.advance(); // skip the break
@@ -279,7 +270,6 @@ export class Parser {
       stmt.source = source;
       return continueStmt;
     } else if (this.currToken.type === TokenType.CONTINUE) {
-      console.log('parsing continue');
       const line: number = this.currToken.line;
       const source: string = this.currToken.source;
       this.advance(); // skip the continue
@@ -293,7 +283,6 @@ export class Parser {
       stmt.source = source;
       return continueStmt;
     } else if (this.currToken.type === TokenType.TYPE) {
-      console.log('parsing type');
       if (this.currToken.value === 'void') {
         this.throwError(`invalid variable declaration. Cannot declare a void variable`, this.currToken);
       }
@@ -330,28 +319,24 @@ export class Parser {
       this.advance(); // skip the semicolon
       return declStmt;
     } else if (this.currToken.type === TokenType.ALLOC) {
-      console.log('parsing alloc');
       this.advance(); // skip the alloc
       if (this.currToken.type !== TokenType.TYPE) {
         this.throwError(`invalid variable allocation. Expected a type, but ${this.currToken.getName()} found`, this.currToken);
       }
       return this.getStatement(prev, stop);
     } else if (this.currToken.type === TokenType.REF) {
-      console.log('parsing ref');
       this.advance(); // skip the alloc
       if (this.currToken.type !== TokenType.TYPE) {
         this.throwError(`invalid variable reference. Expected a type, but ${this.currToken.getName()} found`, this.currToken);
       }
       return this.getStatement(prev, stop);
     } else if (this.currToken.type === TokenType.CONST) {
-      console.log('parsing const');
       this.advance(); // skip the const
       if (this.currToken.type !== TokenType.TYPE && this.currToken.type !== TokenType.ALLOC && this.currToken.type !== TokenType.REF) {
         this.throwError(`invalid constant variable declaration. Expected a type, alloc or ref, but ${this.currToken.getName()} found`, this.currToken);
       }
       return this.getStatement(prev, stop);
     } else if (this.currToken.type === TokenType.SEMI_COLON && prev.type === NodeType.UNKNOWN) {
-      console.log('parsing nop');
       let nopStmt: Node = new Node(new Statement(StmtType.NOP));
       let stmt = nopStmt.toStmt();
       stmt.line = this.currToken.line;
@@ -359,10 +344,8 @@ export class Parser {
       this.advance(); // skip the ;
       return nopStmt;
     } else if (this.currToken.type === this.terminal) {
-      console.log('reached terminal')
       return prev;
     } else {
-      console.log('parsing expression statement');
       const line: number = this.currToken.line;
       const source: string = this.currToken.source;
       let expr: Node[] = this.getExpression(TokenType.SEMI_COLON);
@@ -374,8 +357,6 @@ export class Parser {
       this.advance(); // skip the ;
       return exprStmt;
     }
-    this.throwError(`unrecognized token ${this.currToken.getName()}`, this.currToken);
-    return prev;
   }
 
   private getManyExpressions(sep: TokenType, stop: TokenType): Node[][] {
@@ -552,21 +533,16 @@ export class Parser {
   private getExprNode(): Node {
     this.failIfEOF(TokenType.GENERAL_EXPRESSION);
     if (this.currToken.type === TokenType.FUNCTION) {
-      console.log('func node')
       return this.parseFuncExpression();
     } else if (this.currToken.type === TokenType.ARRAY) {
-      console.log('array node')
       return this.parseArrayExpression();
     } else if (this.currToken.type === TokenType.IDENTIFIER) {
-      console.log('id node')
       let id: Node = new Node(new Expression(ExprType.IDENTIFIER_EXPR, this.currToken.value));
       this.advance();
       return id;
     } else if (this.currToken.type === TokenType.LEFT_PAREN) {
-      console.log('checking left paren');
       if (this.prev.type === TokenType.RIGHT_PAREN || this.prev.type === TokenType.IDENTIFIER ||
         this.prev.type === TokenType.RIGHT_BRACKET || this.prev.type === TokenType.STRING_LITERAL) {
-          console.log('fc node')
           let fc: Node[] = [];
           let call: Node = new Node(new Expression(ExprType.FUNC_CALL, fc));
           this.advance(); // skip the (
@@ -575,38 +551,32 @@ export class Parser {
           this.advance(); // skip the )
           return call;
         } else {
-          console.log('lparen node')
           this.advance(); // skip the (
           const rpn: Node[] = this.getExpression(TokenType.RIGHT_PAREN);
           this.advance(); // skip the )
           return new Node(new Expression(ExprType.RPN, rpn));
         }
     } else if (this.currToken.type === TokenType.LEFT_BRACKET) {
-      console.log('index node')
       this.advance(); // skip the [
       let rpn: Node[] = this.getExpression(TokenType.RIGHT_BRACKET);
       this.advance(); // skip the ]
       let index: Node = new Node(new Expression(ExprType.INDEX, rpn));
       return index;
     } else if (this.currToken.type === TokenType.STRING_LITERAL) {
-      console.log('str node')
       let strLiteral: Node = new Node(new Expression(ExprType.STR_EXPR, this.currToken.value));
       this.advance();
       return strLiteral;
     } else if (Utils.opUnary(this.currToken.type)) {
-      console.log('unary node')
       const tokenType: TokenType = this.currToken.type;
       this.advance(); // skip the op
       this.failIfEOF(TokenType.GENERAL_EXPRESSION);
       return new Node(new Expression(ExprType.UNARY_OP, tokenType));
     } else if (Utils.opBinary(this.currToken.type)) {
-      console.log('binary node')
       const tokenType: TokenType = this.currToken.type;
       this.advance(); // skip the op
       this.failIfEOF(TokenType.GENERAL_EXPRESSION);
       return new Node(new Expression(ExprType.BINARY_OP, tokenType));
     } else if (Utils.isNumber(this.currToken.type)) {
-      console.log('num node')
       const isNegative: boolean = this.currToken.value[0] === '-';
       let arg: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
@@ -616,7 +586,6 @@ export class Parser {
       this.advance(); // skip the number
       return numLiteral;
     } else if (this.currToken.type === TokenType.FLOAT) {
-      console.log('float node')
       const isNegative: boolean = this.currToken.value[0] === '-';
       let float: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
@@ -626,7 +595,6 @@ export class Parser {
       this.advance(); // skip the float
       return floatLiteral;
     } else if (this.currToken.type === TokenType.TRUE || this.currToken.type === TokenType.FALSE) {
-      console.log('bool node')
       const boolean: Node = new Node(new Expression(ExprType.BOOL_EXPR, this.currToken.type === TokenType.TRUE));
       this.advance(); // skip the boolean
       return boolean;

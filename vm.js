@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.NativePrint = exports.CVM = exports.StackTrace = exports.Call = exports.Heap = exports.Cache = exports.Chunk = exports.Variable = exports.Value = void 0;
+exports.CVM = exports.StackTrace = exports.Call = exports.Heap = exports.Cache = exports.Chunk = exports.Variable = exports.Value = void 0;
 const utils_1 = require("./utils");
 class Value {
     constructor(type, value) {
@@ -17,7 +17,7 @@ class Value {
         this.memberName = '';
         this.referenceName = '';
         this.type = type;
-        if (value) {
+        if (value !== undefined) {
             this.value = value;
         }
     }
@@ -110,7 +110,8 @@ class CVM {
         this.heap = new Heap();
         this.trace = new StackTrace();
         this.globals = {
-            ['println']: new NativePrint()
+            ['print']: new NativePrint(),
+            ['println']: new NativePrintln()
         };
     }
     stringify(val) {
@@ -190,16 +191,29 @@ class CVM {
 }
 exports.CVM = CVM;
 class NativePrint {
-    execute(args, VM, ev) {
+    execute(args, ev) {
         if (args.length === 0) {
-            throw new Error('lel!');
+            ev.throwError('print(any) expects at least one argument');
         }
         let i = 0;
         const endIndex = args.length - 1;
         for (const arg of args) {
-            process.stdout.write(`${VM.stringify(arg)}${i !== endIndex ? ' ' : ''}`);
+            process.stdout.write(`${ev.VM.stringify(arg)}${i !== endIndex ? ' ' : ''}`);
         }
         return new Value(utils_1.VarType.VOID);
     }
 }
-exports.NativePrint = NativePrint;
+class NativePrintln {
+    execute(args, ev) {
+        if (args.length === 0) {
+            ev.throwError('println(any) expects at least one argument');
+        }
+        let i = 0;
+        const endIndex = args.length - 1;
+        for (const arg of args) {
+            process.stdout.write(`${ev.VM.stringify(arg)}${i !== endIndex ? ' ' : ''}`);
+        }
+        process.stdout.write('\n');
+        return new Value(utils_1.VarType.VOID);
+    }
+}

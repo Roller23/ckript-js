@@ -129,11 +129,9 @@ class Parser {
             return prev;
         }
         else if (this.currToken.type === token_1.TokenType.CLASS) {
-            console.log('parsing class');
             return this.parseClassStmt();
         }
         else if (this.currToken.type === token_1.TokenType.SET) {
-            console.log('parsing set');
             let set = new ast_1.Node(new ast_1.Statement(ast_1.StmtType.SET));
             let stmt = set.toStmt();
             stmt.line = this.currToken.line;
@@ -163,7 +161,6 @@ class Parser {
             return set;
         }
         else if (this.currToken.type === token_1.TokenType.SET_IDX) {
-            console.log('parsing set idx');
             let setIdx = new ast_1.Node(new ast_1.Statement(ast_1.StmtType.SET_IDX));
             let stmt = setIdx.toStmt();
             stmt.line = this.currToken.line;
@@ -189,7 +186,6 @@ class Parser {
             return setIdx;
         }
         else if (this.currToken.type === token_1.TokenType.LEFT_BRACE) {
-            console.log('parsing compound');
             let comp = new ast_1.Node(new ast_1.Statement(ast_1.StmtType.COMPOUND));
             let stmt = comp.toStmt();
             stmt.source = this.currToken.source;
@@ -205,7 +201,6 @@ class Parser {
             return comp;
         }
         else if (this.currToken.type === token_1.TokenType.IF) {
-            console.log('parsing if');
             const line = this.currToken.line;
             const source = this.currToken.source;
             this.advance(); // skip the if
@@ -227,7 +222,6 @@ class Parser {
             return ifStmt;
         }
         else if (this.currToken.type === token_1.TokenType.WHILE) {
-            console.log('parsing while');
             const line = this.currToken.line;
             const source = this.currToken.source;
             this.advance(); // skip the while
@@ -245,7 +239,6 @@ class Parser {
             return whileStmt;
         }
         else if (this.currToken.type === token_1.TokenType.FOR) {
-            console.log('parsing for');
             const line = this.currToken.line;
             const source = this.currToken.source;
             this.advance(); // skip the for
@@ -263,7 +256,6 @@ class Parser {
             return forStmt;
         }
         else if (this.currToken.type === token_1.TokenType.RETURN) {
-            console.log('parsing return');
             let returnStmt = new ast_1.Node(new ast_1.Statement(ast_1.StmtType.RETURN));
             let stmt = returnStmt.toStmt();
             stmt.line = this.currToken.line;
@@ -274,7 +266,6 @@ class Parser {
             return returnStmt;
         }
         else if (this.currToken.type === token_1.TokenType.BREAK) {
-            console.log('parsing break');
             const line = this.currToken.line;
             const source = this.currToken.source;
             this.advance(); // skip the break
@@ -289,7 +280,6 @@ class Parser {
             return continueStmt;
         }
         else if (this.currToken.type === token_1.TokenType.CONTINUE) {
-            console.log('parsing continue');
             const line = this.currToken.line;
             const source = this.currToken.source;
             this.advance(); // skip the continue
@@ -304,7 +294,6 @@ class Parser {
             return continueStmt;
         }
         else if (this.currToken.type === token_1.TokenType.TYPE) {
-            console.log('parsing type');
             if (this.currToken.value === 'void') {
                 this.throwError(`invalid variable declaration. Cannot declare a void variable`, this.currToken);
             }
@@ -342,7 +331,6 @@ class Parser {
             return declStmt;
         }
         else if (this.currToken.type === token_1.TokenType.ALLOC) {
-            console.log('parsing alloc');
             this.advance(); // skip the alloc
             if (this.currToken.type !== token_1.TokenType.TYPE) {
                 this.throwError(`invalid variable allocation. Expected a type, but ${this.currToken.getName()} found`, this.currToken);
@@ -350,7 +338,6 @@ class Parser {
             return this.getStatement(prev, stop);
         }
         else if (this.currToken.type === token_1.TokenType.REF) {
-            console.log('parsing ref');
             this.advance(); // skip the alloc
             if (this.currToken.type !== token_1.TokenType.TYPE) {
                 this.throwError(`invalid variable reference. Expected a type, but ${this.currToken.getName()} found`, this.currToken);
@@ -358,7 +345,6 @@ class Parser {
             return this.getStatement(prev, stop);
         }
         else if (this.currToken.type === token_1.TokenType.CONST) {
-            console.log('parsing const');
             this.advance(); // skip the const
             if (this.currToken.type !== token_1.TokenType.TYPE && this.currToken.type !== token_1.TokenType.ALLOC && this.currToken.type !== token_1.TokenType.REF) {
                 this.throwError(`invalid constant variable declaration. Expected a type, alloc or ref, but ${this.currToken.getName()} found`, this.currToken);
@@ -366,7 +352,6 @@ class Parser {
             return this.getStatement(prev, stop);
         }
         else if (this.currToken.type === token_1.TokenType.SEMI_COLON && prev.type === ast_1.NodeType.UNKNOWN) {
-            console.log('parsing nop');
             let nopStmt = new ast_1.Node(new ast_1.Statement(ast_1.StmtType.NOP));
             let stmt = nopStmt.toStmt();
             stmt.line = this.currToken.line;
@@ -375,11 +360,9 @@ class Parser {
             return nopStmt;
         }
         else if (this.currToken.type === this.terminal) {
-            console.log('reached terminal');
             return prev;
         }
         else {
-            console.log('parsing expression statement');
             const line = this.currToken.line;
             const source = this.currToken.source;
             let expr = this.getExpression(token_1.TokenType.SEMI_COLON);
@@ -391,8 +374,6 @@ class Parser {
             this.advance(); // skip the ;
             return exprStmt;
         }
-        this.throwError(`unrecognized token ${this.currToken.getName()}`, this.currToken);
-        return prev;
     }
     getManyExpressions(sep, stop) {
         let res = [];
@@ -562,24 +543,19 @@ class Parser {
     getExprNode() {
         this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
         if (this.currToken.type === token_1.TokenType.FUNCTION) {
-            console.log('func node');
             return this.parseFuncExpression();
         }
         else if (this.currToken.type === token_1.TokenType.ARRAY) {
-            console.log('array node');
             return this.parseArrayExpression();
         }
         else if (this.currToken.type === token_1.TokenType.IDENTIFIER) {
-            console.log('id node');
             let id = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.IDENTIFIER_EXPR, this.currToken.value));
             this.advance();
             return id;
         }
         else if (this.currToken.type === token_1.TokenType.LEFT_PAREN) {
-            console.log('checking left paren');
             if (this.prev.type === token_1.TokenType.RIGHT_PAREN || this.prev.type === token_1.TokenType.IDENTIFIER ||
                 this.prev.type === token_1.TokenType.RIGHT_BRACKET || this.prev.type === token_1.TokenType.STRING_LITERAL) {
-                console.log('fc node');
                 let fc = [];
                 let call = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.FUNC_CALL, fc));
                 this.advance(); // skip the (
@@ -589,7 +565,6 @@ class Parser {
                 return call;
             }
             else {
-                console.log('lparen node');
                 this.advance(); // skip the (
                 const rpn = this.getExpression(token_1.TokenType.RIGHT_PAREN);
                 this.advance(); // skip the )
@@ -597,7 +572,6 @@ class Parser {
             }
         }
         else if (this.currToken.type === token_1.TokenType.LEFT_BRACKET) {
-            console.log('index node');
             this.advance(); // skip the [
             let rpn = this.getExpression(token_1.TokenType.RIGHT_BRACKET);
             this.advance(); // skip the ]
@@ -605,27 +579,23 @@ class Parser {
             return index;
         }
         else if (this.currToken.type === token_1.TokenType.STRING_LITERAL) {
-            console.log('str node');
             let strLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.STR_EXPR, this.currToken.value));
             this.advance();
             return strLiteral;
         }
         else if (utils_1.Utils.opUnary(this.currToken.type)) {
-            console.log('unary node');
             const tokenType = this.currToken.type;
             this.advance(); // skip the op
             this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
             return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.UNARY_OP, tokenType));
         }
         else if (utils_1.Utils.opBinary(this.currToken.type)) {
-            console.log('binary node');
             const tokenType = this.currToken.type;
             this.advance(); // skip the op
             this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
             return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BINARY_OP, tokenType));
         }
         else if (utils_1.Utils.isNumber(this.currToken.type)) {
-            console.log('num node');
             const isNegative = this.currToken.value[0] === '-';
             let arg = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
@@ -636,7 +606,6 @@ class Parser {
             return numLiteral;
         }
         else if (this.currToken.type === token_1.TokenType.FLOAT) {
-            console.log('float node');
             const isNegative = this.currToken.value[0] === '-';
             let float = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
@@ -647,7 +616,6 @@ class Parser {
             return floatLiteral;
         }
         else if (this.currToken.type === token_1.TokenType.TRUE || this.currToken.type === token_1.TokenType.FALSE) {
-            console.log('bool node');
             const boolean = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BOOL_EXPR, this.currToken.type === token_1.TokenType.TRUE));
             this.advance(); // skip the boolean
             return boolean;
