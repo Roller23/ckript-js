@@ -186,6 +186,69 @@ export class Evaluator {
     return val; // Unknown, void, or class
   }
 
+  private setMember(members: string[], expression: Node[]): void {
+    const base: string = members[0];
+    let _var: VariablePtr = this.getReferenceByName(base);
+    if (_var === null) {
+      this.throwError(`'${base}' is not defined`);
+    }
+    let val: Value = _var!.val.heapRef !== -1 ? this.getHeapVal(_var!.val.heapRef) : _var?.val!;
+    let references: Value[] = [val];
+    let i: number = 0;
+    let prev: string = members[0];
+    for (const member of members) {
+      if (i++ === 0) continue;
+      let temp: Value = references[references.length - 1];
+      temp = temp.heapRef !== -1 ? this.getHeapVal(temp.heapRef) : temp;
+      if (temp.type !== VarType.OBJ) {
+        this.throwError(`${this.stringify(temp)} is not an object`);
+      }
+      if (!(member in temp.memberValues)) {
+        this.throwError(`${prev} has no member '${member}'`);
+      }
+      references.push(temp.memberValues[member]);
+      prev = member;
+    }
+    const rvalue: Value = this.evaluateExpression(expression);
+    let fin: Value = references[references.length - 1];
+    fin = fin.heapRef !== -1 ? this.getHeapVal(fin.heapRef) : fin;
+    if (fin.type !== rvalue.type) {
+      this.throwError(`Cannot assign ${this.stringify(rvalue)}, incorrect type`);
+    }
+    Object.assign(fin, rvalue);
+  }
+
+  private setIndex(stmt: Statement): void {
+    let arr: VariablePtr = this.getReferenceByName(stmt.objMembers[0]);
+    if (arr === null) {
+      this.throwError(`'${stmt.objMembers[0]}' is not defined`);
+    }
+    let val: Value = arr!.val.heapRef !== -1 ? this.getHeapVal(arr!.val.heapRef) : arr!.val;
+    let references: Value[] = [val];
+    for (const index of stmt.indexes) {
+      let temp: Value = references[references.length - 1];
+      temp = temp.heapRef !== -1 ? this.getHeapVal(temp.heapRef) : temp;
+      if (temp.type !== VarType.ARR) {
+        this.throwError(`${this.stringify(temp)} is not an array`);
+      }
+      const indexVal = this.evaluateExpression(index.toExpr().nodeExpressions); // not sure
+      if (indexVal.type !== VarType.INT) {
+        this.throwError(`Cannot access array with ${this.stringify(indexVal)}`);
+      }
+      if (<number>indexVal.value < 0 || <number>indexVal.value >= temp.arrayValues.length) {
+        this.throwError(`Index [${indexVal.value}] out of range`);
+      }
+      references.push(temp.arrayValues[<number>indexVal.value]);
+    }
+    const rvalue: Value = this.evaluateExpression(stmt.expressions[0]);
+    let fin: Value = references[references.length - 1];
+    fin = fin.heapRef !== -1 ? this.getHeapVal(fin.heapRef) : fin;
+    if (fin.type !== rvalue.type) {
+      this.throwError(`Cannot assign ${this.stringify(rvalue)}, incorrect type`);
+    }
+    Object.assign(fin, rvalue);
+  }
+
   private logicalNot(x: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     if (xVal.type === VarType.BOOL) {
@@ -810,10 +873,10 @@ export class Evaluator {
       return Evaluator.FLAG_OK;
     } else if (stmt.type === StmtType.SET) {
       if (stmt.expressions.length === 0) return Evaluator.FLAG_OK;
-      // this.setMember(stmt.objMembers, stmt.expressions); TODO
+      this.setMember(stmt.objMembers, stmt.expressions[0]);
       return Evaluator.FLAG_OK;
     } else if (stmt.type === StmtType.SET_IDX) {
-      // this.setIndex(stmt); TODO
+      this.setIndex(stmt);
       return Evaluator.FLAG_OK;
     } else if (stmt.type === StmtType.DECL) {
       if (stmt.statements.length !== 1) return Evaluator.FLAG_OK;
