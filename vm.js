@@ -126,7 +126,15 @@ class CVM {
             ['file_read']: new NativeFileread(),
             ['file_write']: new NativeFilewrite(),
             ['file_exists']: new NativeFileexists(),
-            ['file_remove']: new NativeFileremove()
+            ['file_remove']: new NativeFileremove(),
+            ['abs']: new NativeAbs(),
+            ['rand']: new NativeRand(),
+            ['randf']: new NativeRandf(),
+            ['contains']: new NativeContains(),
+            ['split']: new NativeSplit(),
+            ['substr']: new NativeSubstr(),
+            ['to_bytes']: new NativeTobytes(),
+            ['from_bytes']: new NativeFrombytes()
         };
     }
     stringify(val) {
@@ -208,7 +216,7 @@ exports.CVM = CVM;
 class NativePrint {
     execute(args, ev) {
         if (args.length === 0) {
-            ev.throwError('print(any) expects at least one argument');
+            ev.throwError('print expects at least one argument (any, any...)');
         }
         let i = 0;
         const endIndex = args.length - 1;
@@ -221,7 +229,7 @@ class NativePrint {
 class NativePrintln {
     execute(args, ev) {
         if (args.length === 0) {
-            ev.throwError('println(any) expects at least one argument');
+            ev.throwError('println expects at least one argument (any, any...)');
         }
         let i = 0;
         const endIndex = args.length - 1;
@@ -235,10 +243,10 @@ class NativePrintln {
 class NativeInput {
     execute(args, ev) {
         if (args.length > 1) {
-            ev.throwError(`input(str?) takes one optional argument`);
+            ev.throwError(`input takes one optional argument (str)`);
         }
         if (args.length === 1 && args[0].type !== utils_1.VarType.STR) {
-            ev.throwError(`input(str?) the optional argument must be a string`);
+            ev.throwError(`input optional argument must be a string`);
         }
         const question = args.length === 1 && args[0].type === utils_1.VarType.STR ? args[0].value : '';
         return new Value(utils_1.VarType.STR, readlineSync.question(question));
@@ -247,7 +255,7 @@ class NativeInput {
 class NativeSizeof {
     execute(args, ev) {
         if (args.length !== 1) {
-            ev.throwError(`size(arr|str) expects one argument`);
+            ev.throwError(`size expects one argument (arr|str)`);
         }
         const arg = args[0];
         if (arg.type === utils_1.VarType.ARR) {
@@ -265,7 +273,7 @@ class NativeSizeof {
 class NativeTostr {
     execute(args, ev) {
         if (args.length !== 1) {
-            ev.throwError(`to_str(any) expects one argument`);
+            ev.throwError(`to_str expects one argument (any)`);
         }
         return new Value(utils_1.VarType.STR, ev.VM.stringify(args[0]));
     }
@@ -273,7 +281,7 @@ class NativeTostr {
 class NativeToint {
     execute(args, ev) {
         if (args.length !== 1) {
-            ev.throwError(`to_int(int|float|str|bool) expects one argument`);
+            ev.throwError(`to_int expects one argument (int|float|str|bool)`);
         }
         const arg = args[0];
         if (arg.type === utils_1.VarType.INT) {
@@ -299,7 +307,7 @@ class NativeToint {
 class NativeTodouble {
     execute(args, ev) {
         if (args.length !== 1) {
-            ev.throwError(`to_double(int|float|str|bool) expects one argument`);
+            ev.throwError(`to_double expects one argument (int|float|str|bool)`);
         }
         const arg = args[0];
         if (arg.type === utils_1.VarType.INT) {
@@ -325,7 +333,7 @@ class NativeTodouble {
 class NativeExit {
     execute(args, ev) {
         if (args.length !== 1 || args[0].type !== utils_1.VarType.INT) {
-            ev.throwError(`exit(int) expects one argument`);
+            ev.throwError(`exit expects one argument (int)`);
         }
         process.exit(args[0].value);
     }
@@ -333,7 +341,7 @@ class NativeExit {
 class NativeTimestamp {
     execute(args, ev) {
         if (args.length !== 0) {
-            ev.throwError(`timestamp() expects no arguments`);
+            ev.throwError(`timestamp expects no arguments`);
         }
         return new Value(utils_1.VarType.INT, Date.now());
     }
@@ -341,7 +349,7 @@ class NativeTimestamp {
 class NativePow {
     execute(args, ev) {
         if (args.length !== 2) {
-            ev.throwError(`pow(int|double, int|double) expects two arguments`);
+            ev.throwError(`pow expects two arguments (int|double, int|double)`);
         }
         if (!(args[0].type === utils_1.VarType.FLOAT || args[0].type === utils_1.VarType.INT)
             || !(args[1].type === utils_1.VarType.FLOAT || args[1].type === utils_1.VarType.INT)) {
@@ -355,7 +363,7 @@ class NativePow {
 class NativeFileread {
     execute(args, ev) {
         if (args.length !== 1 || args[0].type !== utils_1.VarType.STR) {
-            ev.throwError(`file_read(str) expects one argument`);
+            ev.throwError(`file_read expects one argument (str)`);
         }
         const path = args[0].value;
         if (!fs_1.existsSync(path)) {
@@ -367,11 +375,16 @@ class NativeFileread {
 class NativeFilewrite {
     execute(args, ev) {
         if (args.length !== 2 || args[0].type !== utils_1.VarType.STR || args[1].type !== utils_1.VarType.STR) {
-            ev.throwError(`file_write(str, str) expects two arguments`);
+            ev.throwError(`file_write expects two arguments (str, str)`);
         }
         const path = args[0].value;
-        fs_1.writeFileSync(path, args[1].value, { encoding: 'utf8', flag: 'w' });
-        return new Value(utils_1.VarType.BOOL, true);
+        try {
+            fs_1.writeFileSync(path, args[1].value, { encoding: 'utf8', flag: 'w' });
+            return new Value(utils_1.VarType.BOOL, true);
+        }
+        catch (e) {
+            return new Value(utils_1.VarType.BOOL, false);
+        }
     }
 }
 class NativeFileexists {
@@ -386,7 +399,7 @@ class NativeFileexists {
 class NativeFileremove {
     execute(args, ev) {
         if (args.length !== 1 || args[0].type !== utils_1.VarType.STR) {
-            ev.throwError(`file_remove(str) expects one argument`);
+            ev.throwError(`file_remove expects one argument (str)`);
         }
         try {
             fs_1.unlinkSync(args[0].value);
@@ -395,5 +408,93 @@ class NativeFileremove {
         catch (e) {
             return new Value(utils_1.VarType.BOOL, false);
         }
+    }
+}
+class NativeAbs {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError(`abs expects one argument (int|double)`);
+        }
+        return new Value(args[0].type, Math.abs(args[0].value));
+    }
+}
+class NativeRand {
+    execute(args, ev) {
+        if (args.length !== 2 || args[0].type !== utils_1.VarType.INT || args[1].type !== utils_1.VarType.INT) {
+            ev.throwError(`rand expects two arguments (int, int)`);
+        }
+        const min = Math.ceil(args[0].value);
+        const max = Math.floor(args[1].value);
+        const rnd = Math.floor(Math.random() * (max - min + 1)) + min;
+        return new Value(utils_1.VarType.INT, rnd);
+    }
+}
+class NativeRandf {
+    execute(args, ev) {
+        if (args.length !== 2 || args[0].type !== utils_1.VarType.FLOAT || args[1].type !== utils_1.VarType.FLOAT) {
+            ev.throwError(`randf expects two arguments (double, double)`);
+        }
+        const min = args[0].value;
+        const max = args[1].value;
+        const rnd = Math.random() * (min - max) + max;
+        return new Value(utils_1.VarType.FLOAT, rnd);
+    }
+}
+class NativeContains {
+    execute(args, ev) {
+        if (args.length !== 2 || args[0].type !== utils_1.VarType.STR || args[1].type !== utils_1.VarType.STR) {
+            ev.throwError(`contains expects two arguments (str, str)`);
+        }
+        const res = args[0].value.includes(args[1].value);
+        return new Value(utils_1.VarType.BOOL, res);
+    }
+}
+class NativeSubstr {
+    execute(args, ev) {
+        if (args.length !== 3 || args[0].type !== utils_1.VarType.STR || args[1].type !== utils_1.VarType.INT || args[2].type !== utils_1.VarType.INT) {
+            ev.throwError(`substr expects two arguments (str, int, int)`);
+        }
+        const str = args[0].value.substr(args[1].value, args[2].value);
+        return new Value(utils_1.VarType.STR, str);
+    }
+}
+class NativeSplit {
+    execute(args, ev) {
+        if (args.length !== 2 || args[0].type !== utils_1.VarType.STR || args[1].type !== utils_1.VarType.STR) {
+            ev.throwError(`split expects two arguments (str, str)`);
+        }
+        const strings = args[0].value.split(args[1].value);
+        let res = new Value(utils_1.VarType.ARR);
+        res.arrayType = 'str';
+        for (const str of strings) {
+            res.arrayValues.push(new Value(utils_1.VarType.STR, str));
+        }
+        return res;
+    }
+}
+class NativeTobytes {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.STR) {
+            ev.throwError(`to_bytes expects one argument (str)`);
+        }
+        let res = new Value(utils_1.VarType.ARR);
+        res.arrayType = 'int';
+        const buffer = [...Buffer.from(args[0].value)];
+        for (const byte of buffer) {
+            res.arrayValues.push(new Value(utils_1.VarType.INT, byte));
+        }
+        return res;
+    }
+}
+class NativeFrombytes {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.ARR || args[0].arrayType !== 'int') {
+            ev.throwError(`from_bytes expects one argument (arr<int>)`);
+        }
+        let bytes = [];
+        for (const el of args[0].arrayValues) {
+            bytes.push(el.value);
+        }
+        return new Value(utils_1.VarType.STR, String.fromCharCode(...bytes));
     }
 }

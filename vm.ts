@@ -135,7 +135,15 @@ export class CVM {
     ['file_read']: new NativeFileread(),
     ['file_write']: new NativeFilewrite(),
     ['file_exists']: new NativeFileexists(),
-    ['file_remove']: new NativeFileremove()
+    ['file_remove']: new NativeFileremove(),
+    ['abs']: new NativeAbs(),
+    ['rand']: new NativeRand(),
+    ['randf']: new NativeRandf(),
+    ['contains']: new NativeContains(),
+    ['split']: new NativeSplit(),
+    ['substr']: new NativeSubstr(),
+    ['to_bytes']: new NativeTobytes(),
+    ['from_bytes']: new NativeFrombytes()
   };
   public stringify(val: Value): string {
     if (val.heapRef !== -1) {
@@ -201,7 +209,7 @@ export class CVM {
 class NativePrint implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length === 0) {
-      ev.throwError('print(any) expects at least one argument');
+      ev.throwError('print expects at least one argument (any, any...)');
     }
     let i: number = 0;
     const endIndex: number = args.length - 1;
@@ -215,7 +223,7 @@ class NativePrint implements NativeFunction {
 class NativePrintln implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length === 0) {
-      ev.throwError('println(any) expects at least one argument');
+      ev.throwError('println expects at least one argument (any, any...)');
     }
     let i: number = 0;
     const endIndex: number = args.length - 1;
@@ -230,10 +238,10 @@ class NativePrintln implements NativeFunction {
 class NativeInput implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length > 1) {
-      ev.throwError(`input(str?) takes one optional argument`);
+      ev.throwError(`input takes one optional argument (str)`);
     }
     if (args.length === 1 && args[0].type !== VarType.STR) {
-      ev.throwError(`input(str?) the optional argument must be a string`);
+      ev.throwError(`input optional argument must be a string`);
     }
     const question = args.length === 1 && args[0].type === VarType.STR ? args[0].value : '';
     return new Value(VarType.STR, readlineSync.question(question));
@@ -243,7 +251,7 @@ class NativeInput implements NativeFunction {
 class NativeSizeof implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1) {
-      ev.throwError(`size(arr|str) expects one argument`);
+      ev.throwError(`size expects one argument (arr|str)`);
     }
     const arg: Value = args[0];
     if (arg.type === VarType.ARR) {
@@ -260,7 +268,7 @@ class NativeSizeof implements NativeFunction {
 class NativeTostr implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1) {
-      ev.throwError(`to_str(any) expects one argument`);
+      ev.throwError(`to_str expects one argument (any)`);
     }
     return new Value(VarType.STR, ev.VM.stringify(args[0]));
   }
@@ -269,7 +277,7 @@ class NativeTostr implements NativeFunction {
 class NativeToint implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1) {
-      ev.throwError(`to_int(int|float|str|bool) expects one argument`);
+      ev.throwError(`to_int expects one argument (int|float|str|bool)`);
     }
     const arg: Value = args[0];
     if (arg.type === VarType.INT) {
@@ -293,7 +301,7 @@ class NativeToint implements NativeFunction {
 class NativeTodouble implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1) {
-      ev.throwError(`to_double(int|float|str|bool) expects one argument`);
+      ev.throwError(`to_double expects one argument (int|float|str|bool)`);
     }
     const arg: Value = args[0];
     if (arg.type === VarType.INT) {
@@ -317,7 +325,7 @@ class NativeTodouble implements NativeFunction {
 class NativeExit implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1 || args[0].type !== VarType.INT) {
-      ev.throwError(`exit(int) expects one argument`);
+      ev.throwError(`exit expects one argument (int)`);
     }
     process.exit(<number>args[0].value);
   }
@@ -326,7 +334,7 @@ class NativeExit implements NativeFunction {
 class NativeTimestamp implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 0) {
-      ev.throwError(`timestamp() expects no arguments`);
+      ev.throwError(`timestamp expects no arguments`);
     }
     return new Value(VarType.INT, Date.now());
   }
@@ -335,7 +343,7 @@ class NativeTimestamp implements NativeFunction {
 class NativePow implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 2) {
-      ev.throwError(`pow(int|double, int|double) expects two arguments`);
+      ev.throwError(`pow expects two arguments (int|double, int|double)`);
     }
     if (!(args[0].type === VarType.FLOAT || args[0].type === VarType.INT)
      || !(args[1].type === VarType.FLOAT || args[1].type === VarType.INT)) {
@@ -350,7 +358,7 @@ class NativePow implements NativeFunction {
 class NativeFileread implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1 || args[0].type !== VarType.STR) {
-      ev.throwError(`file_read(str) expects one argument`);
+      ev.throwError(`file_read expects one argument (str)`);
     }
     const path: string = <string>args[0].value;
     if (!existsSync(path)) {
@@ -363,7 +371,7 @@ class NativeFileread implements NativeFunction {
 class NativeFilewrite implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 2 || args[0].type !== VarType.STR || args[1].type !== VarType.STR) {
-      ev.throwError(`file_write(str, str) expects two arguments`);
+      ev.throwError(`file_write expects two arguments (str, str)`);
     }
     const path: string = <string>args[0].value;
     try {
@@ -388,7 +396,7 @@ class NativeFileexists implements NativeFunction {
 class NativeFileremove implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1 || args[0].type !== VarType.STR) {
-      ev.throwError(`file_remove(str) expects one argument`);
+      ev.throwError(`file_remove expects one argument (str)`);
     }
     try {
       unlinkSync(<string>args[0].value);
@@ -396,5 +404,101 @@ class NativeFileremove implements NativeFunction {
     } catch (e) {
       return new Value(VarType.BOOL, false);
     }
+  }
+}
+
+class NativeAbs implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError(`abs expects one argument (int|double)`);
+    }
+    return new Value(args[0].type, Math.abs(<number>args[0].value));
+  }
+}
+
+class NativeRand implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 2 || args[0].type !== VarType.INT || args[1].type !== VarType.INT) {
+      ev.throwError(`rand expects two arguments (int, int)`);
+    }
+    const min: number = Math.ceil(<number>args[0].value);
+    const max: number = Math.floor(<number>args[1].value);
+    const rnd: number = Math.floor(Math.random() * (max - min + 1)) + min;
+    return new Value(VarType.INT, rnd);
+  }
+}
+
+class NativeRandf implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 2 || args[0].type !== VarType.FLOAT || args[1].type !== VarType.FLOAT) {
+      ev.throwError(`randf expects two arguments (double, double)`);
+    }
+    const min: number = <number>args[0].value;
+    const max: number = <number>args[1].value;
+    const rnd: number = Math.random() * (min - max) + max;
+    return new Value(VarType.FLOAT, rnd);
+  }
+}
+
+class NativeContains implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 2 || args[0].type !== VarType.STR || args[1].type !== VarType.STR) {
+      ev.throwError(`contains expects two arguments (str, str)`);
+    }
+    const res: boolean = (<string>args[0].value).includes(<string>args[1].value);
+    return new Value(VarType.BOOL, res);
+  }
+}
+
+class NativeSubstr implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 3 || args[0].type !== VarType.STR || args[1].type !== VarType.INT || args[2].type !== VarType.INT) {
+      ev.throwError(`substr expects two arguments (str, int, int)`);
+    }
+    const str = (<string>args[0].value).substr(<number>args[1].value, <number>args[2].value);
+    return new Value(VarType.STR, str);
+  }
+}
+
+class NativeSplit implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 2 || args[0].type !== VarType.STR || args[1].type !== VarType.STR) {
+      ev.throwError(`split expects two arguments (str, str)`);
+    }
+    const strings = (<string>args[0].value).split(<string>args[1].value);
+    let res: Value = new Value(VarType.ARR);
+    res.arrayType = 'str';
+    for (const str of strings) {
+      res.arrayValues.push(new Value(VarType.STR, str));
+    }
+    return res;
+  }
+}
+
+class NativeTobytes implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.STR) {
+      ev.throwError(`to_bytes expects one argument (str)`);
+    }
+    let res: Value = new Value(VarType.ARR);
+    res.arrayType = 'int';
+    const buffer: number[] = [...Buffer.from(<string>args[0].value)];
+    for (const byte of buffer) {
+      res.arrayValues.push(new Value(VarType.INT, byte));
+    }
+    return res;
+  }
+}
+
+class NativeFrombytes implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.ARR || args[0].arrayType !== 'int') {
+      ev.throwError(`from_bytes expects one argument (arr<int>)`);
+    }
+    let bytes: number[] = [];
+    for (const el of args[0].arrayValues) {
+      bytes.push(<number>el.value);
+    }
+    return new Value(VarType.STR, String.fromCharCode(...bytes));
   }
 }
