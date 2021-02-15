@@ -1111,7 +1111,14 @@ class Evaluator {
         }
         return res;
     }
+    static getProp(obj, key) {
+        return obj[key];
+    }
     evaluateExpression(expressionTree, getRef = false) {
+        // cache the result of flattenTree()
+        // let rpnStack: RpnStack = 'cache' in expressionTree ? Evaluator.getProp(expressionTree, 'cache') : Object.defineProperty(expressionTree, 'cache', {
+        //   value: this.flattenTree([], expressionTree)
+        // }).cache;
         let rpnStack = this.flattenTree([], expressionTree);
         let resStack = [];
         for (const token of rpnStack) {
