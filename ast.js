@@ -64,7 +64,6 @@ class Expression {
         this.arraySize = [];
         this.op = token_1.TokenType.NONE;
         this.type = type;
-        // life is pain
         if (this.type === ExprType.UNARY_OP || this.type === ExprType.BINARY_OP) {
             this.op = arg;
         }

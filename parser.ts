@@ -295,7 +295,7 @@ export class Parser {
         constant = true;
       }
       let varDecl: Node = new Node(new Declaration(DeclType.VAR_DECL));
-      let decl = varDecl.toDecl();
+      let decl = varDecl.obj as Declaration;
       decl.varType = this.currToken.value;
       this.advance(); // skip the variable type
       if (this.currToken.type !== TokenType.IDENTIFIER) {

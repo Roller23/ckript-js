@@ -626,6 +626,7 @@ class NativeSleep implements NativeFunction {
     if (args[0].value! < 0) {
       ev.throwError(`Sleep time must be greater than -1`);
     }
+    // there's no other way to synchronously sleep without async/await
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, <number>args[0].value);
     return new Value(VarType.VOID);
   }

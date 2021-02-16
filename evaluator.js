@@ -634,7 +634,7 @@ class Evaluator {
         _var.val.className = _class.className;
     }
     declareVariable(declaration) {
-        const decl = declaration.toDecl();
+        const decl = declaration.obj;
         const varVal = this.evaluateExpression(decl.varExpression, decl.isReference);
         const varType = utils_1.Utils.varLUT[decl.varType];
         let exprType = varVal.type;
@@ -848,7 +848,7 @@ class Evaluator {
         }
     }
     executeStatement(statement) {
-        const stmt = statement.toStmt();
+        const stmt = statement.obj;
         this.currentLine = stmt.line;
         this.currentSource = stmt.source;
         if (stmt.type === ast_1.StmtType.NONE) {
@@ -1004,7 +1004,7 @@ class Evaluator {
         return new RpnElement(ElementType.VALUE, val);
     }
     nodeToElement(node) {
-        const expr = node.toExpr();
+        const expr = node.obj;
         if (expr.isOperand()) {
             if (expr.type === ast_1.ExprType.FUNC_CALL) {
                 return Evaluator.RpnOp(OperatorType.FUNC, expr.argsList);
@@ -1105,7 +1105,7 @@ class Evaluator {
     }
     flattenTree(res, expressionTree) {
         for (const node of expressionTree) {
-            const expr = node.toExpr();
+            const expr = node.obj;
             const isRpn = expr.type === ast_1.ExprType.RPN;
             if (expr.nodeExpressions.length !== 0 && isRpn) {
                 // TODO: this if might be wrong

@@ -43,7 +43,6 @@ export class Expression {
   }
   public constructor(type: ExprType, arg?: any) {
     this.type = type;
-    // life is pain
     if (this.type === ExprType.UNARY_OP || this.type === ExprType.BINARY_OP) {
       this.op = arg;
     } else if (this.type === ExprType.RPN) {

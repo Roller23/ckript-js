@@ -34,4 +34,4 @@ function main(argv) {
     new Interpreter().processFile(argv[0], argv.slice(1));
     return 0;
 }
-process.exit(main(process.argv.slice(2)));
+process.exitCode = main(process.argv.slice(2));

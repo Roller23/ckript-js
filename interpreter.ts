@@ -34,4 +34,4 @@ function main(argv: string[]): number {
   return 0;
 }
 
-process.exit(main(process.argv.slice(2)));
+process.exitCode = main(process.argv.slice(2));

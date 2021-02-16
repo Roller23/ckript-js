@@ -1,4 +1,4 @@
-import { ClassStatement, Declaration, ExprType, FuncExpression, FuncParam, Node, Statement, StmtType } from "./ast";
+import { ClassStatement, Declaration, Expression, ExprType, FuncExpression, FuncParam, Node, Statement, StmtType } from "./ast";
 import { ErrorHandler } from "./error-handler";
 import { Token, TokenType } from "./token";
 import { Utils, VarType } from "./utils";
@@ -657,7 +657,7 @@ export class Evaluator {
   }
 
   private declareVariable(declaration: Node): void {
-    const decl: Declaration = declaration.toDecl();
+    const decl: Declaration = declaration.obj as Declaration;
     const varVal: Value = this.evaluateExpression(decl.varExpression, decl.isReference);
     const varType: VarType = Utils.varLUT[decl.varType];
     let exprType: VarType = varVal.type;
@@ -867,7 +867,7 @@ export class Evaluator {
   }
 
   private executeStatement(statement: Node): number {
-    const stmt: Statement = statement.toStmt();
+    const stmt: Statement = statement.obj as Statement;
     this.currentLine = stmt.line;
     this.currentSource = stmt.source;
     if (stmt.type === StmtType.NONE) {
@@ -997,7 +997,7 @@ export class Evaluator {
   }
 
   private nodeToElement(node: Node): RpnElement {
-    const expr = node.toExpr();
+    const expr = node.obj as Expression;
     if (expr.isOperand()) {
       if (expr.type === ExprType.FUNC_CALL) {
         return Evaluator.RpnOp(OperatorType.FUNC, expr.argsList);
@@ -1086,7 +1086,7 @@ export class Evaluator {
 
   private flattenTree(res: RpnStack, expressionTree: Node[]): RpnStack {
     for (const node of expressionTree) {
-      const expr = node.toExpr();
+      const expr = node.obj as Expression;
       const isRpn: boolean = expr.type === ExprType.RPN;
       if (expr.nodeExpressions.length !== 0 && isRpn) {
         // TODO: this if might be wrong

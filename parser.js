@@ -306,7 +306,7 @@ class Parser {
                 constant = true;
             }
             let varDecl = new ast_1.Node(new ast_1.Declaration(ast_1.DeclType.VAR_DECL));
-            let decl = varDecl.toDecl();
+            let decl = varDecl.obj;
             decl.varType = this.currToken.value;
             this.advance(); // skip the variable type
             if (this.currToken.type !== token_1.TokenType.IDENTIFIER) {
