@@ -113,28 +113,46 @@ class CVM {
         this.heap = new Heap();
         this.trace = new StackTrace();
         this.globals = {
-            ['print']: new NativePrint(),
-            ['println']: new NativePrintln(),
-            ['input']: new NativeInput(),
-            ['sizeof']: new NativeSizeof(),
-            ['to_str']: new NativeTostr(),
-            ['to_int']: new NativeToint(),
-            ['to_double']: new NativeTodouble(),
-            ['exit']: new NativeExit(),
-            ['timestamp']: new NativeTimestamp(),
-            ['pow']: new NativePow(),
-            ['file_read']: new NativeFileread(),
-            ['file_write']: new NativeFilewrite(),
-            ['file_exists']: new NativeFileexists(),
-            ['file_remove']: new NativeFileremove(),
-            ['abs']: new NativeAbs(),
-            ['rand']: new NativeRand(),
-            ['randf']: new NativeRandf(),
-            ['contains']: new NativeContains(),
-            ['split']: new NativeSplit(),
-            ['substr']: new NativeSubstr(),
-            ['to_bytes']: new NativeTobytes(),
-            ['from_bytes']: new NativeFrombytes()
+            'print': new NativePrint(),
+            'println': new NativePrintln(),
+            'input': new NativeInput(),
+            'sizeof': new NativeSizeof(),
+            'to_str': new NativeTostr(),
+            'to_int': new NativeToint(),
+            'to_double': new NativeTodouble(),
+            'exit': new NativeExit(),
+            'timestamp': new NativeTimestamp(),
+            'pow': new NativePow(),
+            'file_read': new NativeFileread(),
+            'file_write': new NativeFilewrite(),
+            'file_exists': new NativeFileexists(),
+            'file_remove': new NativeFileremove(),
+            'abs': new NativeAbs(),
+            'rand': new NativeRand(),
+            'randf': new NativeRandf(),
+            'contains': new NativeContains(),
+            'split': new NativeSplit(),
+            'substr': new NativeSubstr(),
+            'to_bytes': new NativeTobytes(),
+            'from_bytes': new NativeFrombytes(),
+            'bind': new NativeBind(),
+            'class_name': new NativeClassname(),
+            'array_type': new NativeArraytype(),
+            'stack_trace': new NativeStacktrace(),
+            'sleep': new NativeSleep(),
+            'sin': new NativeSin(),
+            'sinh': new NativeSinh(),
+            'cos': new NativeCos(),
+            'cosh': new NativeCosh(),
+            'tan': new NativeTan(),
+            'tanh': new NativeTanh(),
+            'sqrt': new NativeSqrt(),
+            'log': new NativeLog(),
+            'log10': new NativeLog10(),
+            'exp': new NativeExp(),
+            'floor': new NativeFloor(),
+            'ceil': new NativeCeil(),
+            'round': new NativeRound()
         };
     }
     stringify(val) {
@@ -496,5 +514,191 @@ class NativeFrombytes {
             bytes.push(el.value);
         }
         return new Value(utils_1.VarType.STR, String.fromCharCode(...bytes));
+    }
+}
+class NativeBind {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].heapRef === -1) {
+            ev.throwError(`bind expects one argument (ref obj)`);
+        }
+        const ref = args[0].heapRef;
+        if (ref < 0 || ref >= ev.VM.heap.chunks.length) {
+            ev.throwError('Dereferencing a value that is not on the heap');
+        }
+        const ptr = ev.VM.heap.chunks[ref].data;
+        if (ptr === null) {
+            ev.throwError(`Dereferencing a null pointer`);
+        }
+        if (ptr.type !== utils_1.VarType.OBJ) {
+            ev.throwError(`Only a reference to object can be bound`);
+        }
+        Object.keys(ptr.memberValues).forEach((key) => {
+            let v = ptr.memberValues[key];
+            if (v.heapRef !== -1) {
+                v = ev.VM.heap.chunks[v.heapRef].data;
+            }
+            if (v === null) {
+                ev.throwError(`Dereferencing a null pointer`);
+            }
+            if (v.type === utils_1.VarType.FUNC) {
+                v.thisRef = ref;
+            }
+        });
+        return new Value(utils_1.VarType.VOID);
+    }
+}
+class NativeClassname {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.OBJ) {
+            ev.throwError('class_name expects one argument (obj)');
+        }
+        return new Value(utils_1.VarType.STR, args[0].className);
+    }
+}
+class NativeArraytype {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.ARR) {
+            ev.throwError('array_type expects one argument (arr)');
+        }
+        return new Value(utils_1.VarType.STR, args[0].arrayType);
+    }
+}
+class NativeStacktrace {
+    execute(args, ev) {
+        if (args.length !== 0) {
+            ev.throwError('stack_trace expects no arguments');
+        }
+        const limit = 100;
+        let printed = 0;
+        for (const crumb of ev.VM.trace.stack.reverse()) {
+            if (printed > limit) {
+                process.stdout.write(`    and ${ev.VM.trace.stack.length - printed} more\n`);
+            }
+            const name = !crumb.name ? '<anonymous function>' : `function '${crumb.name}'`;
+            process.stdout.write(`  in ${name} called on line ${crumb.line}`);
+            if (crumb.source) {
+                process.stdout.write(` in file ${crumb.source}`);
+            }
+            process.stdout.write('\n');
+            printed++;
+        }
+        ev.VM.trace.stack.reverse();
+        return new Value(utils_1.VarType.VOID);
+    }
+}
+class NativeSleep {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT) {
+            ev.throwError('sleep expects one argument (int)');
+        }
+        if (args[0].value < 0) {
+            ev.throwError(`Sleep time must be greater than -1`);
+        }
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, args[0].value);
+        return new Value(utils_1.VarType.VOID);
+    }
+}
+class NativeSin {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('sin expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.sin(args[0].value));
+    }
+}
+class NativeSinh {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('sinh expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.sinh(args[0].value));
+    }
+}
+class NativeCos {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('cos expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.cos(args[0].value));
+    }
+}
+class NativeCosh {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('cosh expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.cosh(args[0].value));
+    }
+}
+class NativeTan {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('tan expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.tan(args[0].value));
+    }
+}
+class NativeTanh {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('tanh expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.tanh(args[0].value));
+    }
+}
+class NativeSqrt {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('sqrt expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.sqrt(args[0].value));
+    }
+}
+class NativeLog {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('log expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.log(args[0].value));
+    }
+}
+class NativeLog10 {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('log10 expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.log10(args[0].value));
+    }
+}
+class NativeExp {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('exp expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.exp(args[0].value));
+    }
+}
+class NativeFloor {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('floor expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.floor(args[0].value));
+    }
+}
+class NativeCeil {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('ceil expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.ceil(args[0].value));
+    }
+}
+class NativeRound {
+    execute(args, ev) {
+        if (args.length !== 1 || args[0].type !== utils_1.VarType.INT && args[0].type !== utils_1.VarType.FLOAT) {
+            ev.throwError('round expects one argument (double|int)');
+        }
+        return new Value(utils_1.VarType.FLOAT, Math.round(args[0].value));
     }
 }

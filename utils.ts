@@ -16,7 +16,7 @@ export class Utils {
     ['bool']: VarType.BOOL,
     ['func']: VarType.FUNC,
     ['class']: VarType.CLASS,
-    ['VOID']: VarType.VOID
+    ['void']: VarType.VOID
   };
 
   public static opPrecedence: {[key: number]: number} = {

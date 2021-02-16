@@ -54,7 +54,7 @@ Utils.varLUT = {
     ['bool']: VarType.BOOL,
     ['func']: VarType.FUNC,
     ['class']: VarType.CLASS,
-    ['VOID']: VarType.VOID
+    ['void']: VarType.VOID
 };
 Utils.opPrecedence = {
     [token_1.TokenType.AND_ASSIGN]: 1,

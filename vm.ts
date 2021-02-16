@@ -122,28 +122,46 @@ export class CVM {
   public heap: Heap = new Heap();
   public trace: StackTrace = new StackTrace();
   public globals: {[key: string]: NativeFunction} = {
-    ['print']: new NativePrint(),
-    ['println']: new NativePrintln(),
-    ['input']: new NativeInput(),
-    ['sizeof']: new NativeSizeof(),
-    ['to_str']: new NativeTostr(),
-    ['to_int']: new NativeToint(),
-    ['to_double']: new NativeTodouble(),
-    ['exit']: new NativeExit(),
-    ['timestamp']: new NativeTimestamp(),
-    ['pow']: new NativePow(),
-    ['file_read']: new NativeFileread(),
-    ['file_write']: new NativeFilewrite(),
-    ['file_exists']: new NativeFileexists(),
-    ['file_remove']: new NativeFileremove(),
-    ['abs']: new NativeAbs(),
-    ['rand']: new NativeRand(),
-    ['randf']: new NativeRandf(),
-    ['contains']: new NativeContains(),
-    ['split']: new NativeSplit(),
-    ['substr']: new NativeSubstr(),
-    ['to_bytes']: new NativeTobytes(),
-    ['from_bytes']: new NativeFrombytes()
+    'print': new NativePrint(),
+    'println': new NativePrintln(),
+    'input': new NativeInput(),
+    'sizeof': new NativeSizeof(),
+    'to_str': new NativeTostr(),
+    'to_int': new NativeToint(),
+    'to_double': new NativeTodouble(),
+    'exit': new NativeExit(),
+    'timestamp': new NativeTimestamp(),
+    'pow': new NativePow(),
+    'file_read': new NativeFileread(),
+    'file_write': new NativeFilewrite(),
+    'file_exists': new NativeFileexists(),
+    'file_remove': new NativeFileremove(),
+    'abs': new NativeAbs(),
+    'rand': new NativeRand(),
+    'randf': new NativeRandf(),
+    'contains': new NativeContains(),
+    'split': new NativeSplit(),
+    'substr': new NativeSubstr(),
+    'to_bytes': new NativeTobytes(),
+    'from_bytes': new NativeFrombytes(),
+    'bind': new NativeBind(),
+    'class_name': new NativeClassname(),
+    'array_type': new NativeArraytype(),
+    'stack_trace': new NativeStacktrace(),
+    'sleep': new NativeSleep(),
+    'sin': new NativeSin(),
+    'sinh': new NativeSinh(),
+    'cos': new NativeCos(),
+    'cosh': new NativeCosh(),
+    'tan': new NativeTan(),
+    'tanh': new NativeTanh(),
+    'sqrt': new NativeSqrt(),
+    'log': new NativeLog(),
+    'log10': new NativeLog10(),
+    'exp': new NativeExp(),
+    'floor': new NativeFloor(),
+    'ceil': new NativeCeil(),
+    'round': new NativeRound()
   };
   public stringify(val: Value): string {
     if (val.heapRef !== -1) {
@@ -500,5 +518,209 @@ class NativeFrombytes implements NativeFunction {
       bytes.push(<number>el.value);
     }
     return new Value(VarType.STR, String.fromCharCode(...bytes));
+  }
+}
+
+class NativeBind implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].heapRef === -1) {
+      ev.throwError(`bind expects one argument (ref obj)`);
+    }
+    const ref: number = args[0].heapRef;
+    if (ref < 0 || ref >= ev.VM.heap.chunks.length) {
+      ev.throwError('Dereferencing a value that is not on the heap');
+    }
+    const ptr: ValuePtr = ev.VM.heap.chunks[ref].data;
+    if (ptr === null) {
+      ev.throwError(`Dereferencing a null pointer`);
+    }
+    if (ptr!.type !== VarType.OBJ) {
+      ev.throwError(`Only a reference to object can be bound`);
+    }
+    Object.keys(ptr!.memberValues).forEach((key: string) => {
+      let v: ValuePtr = ptr!.memberValues[key];
+      if (v.heapRef !== -1) {
+        v = ev.VM.heap.chunks[v.heapRef].data;
+      }
+      if (v === null) {
+        ev.throwError(`Dereferencing a null pointer`);
+      }
+      if (v!.type === VarType.FUNC) {
+        v!.thisRef = ref;
+      }
+    });
+    return new Value(VarType.VOID);
+  }
+}
+
+class NativeClassname implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.OBJ) {
+      ev.throwError('class_name expects one argument (obj)');
+    }
+    return new Value(VarType.STR, args[0].className);
+  }
+}
+
+class NativeArraytype implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.ARR) {
+      ev.throwError('array_type expects one argument (arr)');
+    }
+    return new Value(VarType.STR, args[0].arrayType);
+  }
+}
+
+class NativeStacktrace implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 0) {
+      ev.throwError('stack_trace expects no arguments');
+    }
+    const limit: number = 100;
+    let printed: number = 0;
+    for (const crumb of ev.VM.trace.stack.reverse()) {
+      if (printed > limit) {
+        process.stdout.write(`    and ${ev.VM.trace.stack.length - printed} more\n`);
+      }
+      const name: string = !crumb.name ? '<anonymous function>' : `function '${crumb.name}'`;
+      process.stdout.write(`  in ${name} called on line ${crumb.line}`);
+      if (crumb.source) {
+        process.stdout.write(` in file ${crumb.source}`);
+      }
+      process.stdout.write('\n');
+      printed++;
+    }
+    ev.VM.trace.stack.reverse();
+    return new Value(VarType.VOID);
+  }
+}
+
+class NativeSleep implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT) {
+      ev.throwError('sleep expects one argument (int)');
+    }
+    if (args[0].value! < 0) {
+      ev.throwError(`Sleep time must be greater than -1`);
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, <number>args[0].value);
+    return new Value(VarType.VOID);
+  }
+}
+
+class NativeSin implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('sin expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.sin(<number>args[0].value));
+  }
+}
+
+class NativeSinh implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('sinh expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.sinh(<number>args[0].value));
+  }
+}
+
+class NativeCos implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('cos expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.cos(<number>args[0].value));
+  }
+}
+
+class NativeCosh implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('cosh expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.cosh(<number>args[0].value));
+  }
+}
+
+class NativeTan implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('tan expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.tan(<number>args[0].value));
+  }
+}
+
+class NativeTanh implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('tanh expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.tanh(<number>args[0].value));
+  }
+}
+
+class NativeSqrt implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('sqrt expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.sqrt(<number>args[0].value));
+  }
+}
+
+class NativeLog implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('log expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.log(<number>args[0].value));
+  }
+}
+
+class NativeLog10 implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('log10 expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.log10(<number>args[0].value));
+  }
+}
+
+class NativeExp implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('exp expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.exp(<number>args[0].value));
+  }
+}
+
+class NativeFloor implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('floor expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.floor(<number>args[0].value));
+  }
+}
+
+class NativeCeil implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('ceil expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.ceil(<number>args[0].value));
+  }
+}
+
+class NativeRound implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
+      ev.throwError('round expects one argument (double|int)');
+    }
+    return new Value(VarType.FLOAT, Math.round(<number>args[0].value));
   }
 }

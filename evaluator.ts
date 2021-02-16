@@ -58,6 +58,14 @@ export class Evaluator {
   public VM: CVM;
   public AST: Node;
   public stack: CallStack = {};
+
+  private insideFunc: boolean = false;
+  private returnsRef: boolean = false;
+  private nestedLoops: number = 0;
+  private currentLine: number = 0;
+  private currentSource: string = '';
+  private returnValue: Value | null = null;
+
   constructor(AST: Node, VM: CVM) {
     this.VM = VM;
     this.AST = AST;
@@ -549,7 +557,7 @@ export class Evaluator {
   }
 
   private accessMember(x: RpnElement, y: RpnElement): RpnElement {
-    if (y.value.isLvalue()) {
+    if (!y.value.isLvalue()) {
       this.throwError('Object members can only be accessed with lvalues');
     }
     let obj: Value = this.getValue(x);
@@ -1215,11 +1223,4 @@ export class Evaluator {
     }
     return resVal;
   }
-
-  private insideFunc: boolean = false;
-  private returnsRef: boolean = false;
-  private nestedLoops: number = 0;
-  private currentLine: number = 0;
-  private currentSource: string = '';
-  private returnValue: Value | null = null;
 }

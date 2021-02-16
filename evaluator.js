@@ -541,7 +541,7 @@ class Evaluator {
         return this.assign(x, this.bitwiseXor(x, y));
     }
     accessMember(x, y) {
-        if (y.value.isLvalue()) {
+        if (!y.value.isLvalue()) {
             this.throwError('Object members can only be accessed with lvalues');
         }
         let obj = this.getValue(x);
