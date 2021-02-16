@@ -3,7 +3,9 @@ import { FuncExpression, FuncParam, LiteralValue } from './ast'
 import { Evaluator } from "./evaluator";
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 
+// 3rd party modules from npm
 const readlineSync = require('readline-sync');
+const fetch = require('sync-fetch');
 
 export class Value {
   public type: VarType = VarType.UNKNOWN;
@@ -161,7 +163,8 @@ export class CVM {
     exp: new NativeExp(),
     floor: new NativeFloor(),
     ceil: new NativeCeil(),
-    round: new NativeRound()
+    round: new NativeRound(),
+    http: new NativeHttp()
   };
   public stringify(val: Value): string {
     if (val.heapRef !== -1) {
@@ -592,6 +595,26 @@ class NativeStacktrace implements NativeFunction {
     }
     ev.VM.trace.stack.reverse();
     return new Value(VarType.VOID);
+  }
+}
+
+class NativeHttp implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 2 || args[0].type !== VarType.STR || args[1].type !== VarType.STR) {
+      ev.throwError('http expects two arguments (str, str)');
+    }
+    const method: string = (<string>args[0].value).toUpperCase();
+    if (!(method === 'POST' || method === 'GET')) {
+      ev.throwError(`First argument must be a request method ('POST'|'GET')`);
+    }
+    try {
+      const response: string = fetch(args[1].value, {
+        method: method
+      }).text();
+      return new Value(VarType.STR, response);
+    } catch (e) {
+      return new Value(VarType.STR, '');
+    }
   }
 }
 
