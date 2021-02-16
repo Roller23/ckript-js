@@ -585,7 +585,7 @@ export class Evaluator {
       this.throwError(`Index expected to be an int, but ${this.stringify(index)} found`);
     }
     if (<number>index.value < 0 || <number>index.value >= array.arrayValues.length) {
-      this.throwError(`index [${index.value}] our of range`);
+      this.throwError(`index [${index.value}] out of range`);
     }
     let res: Value = array.arrayValues[<number>index.value];
     return Evaluator.RpnVal(res);
@@ -1047,6 +1047,10 @@ export class Evaluator {
       if (initialSize.value !== 0) {
         // TODO????
         // val.arrayValues.resize????????????????????
+        val.arrayValues.length = <number>initialSize.value;
+        for (let i = 0; i < initialSize.value!; i++) {
+          val.arrayValues[i] = new Value(VarType.UNKNOWN);
+        }
       }
       const arrType: VarType = Utils.varLUT[expr.arrayType];
       for (let v of val.arrayValues) v.type = arrType;
@@ -1083,25 +1087,19 @@ export class Evaluator {
   private flattenTree(res: RpnStack, expressionTree: Node[]): RpnStack {
     for (const node of expressionTree) {
       const expr = node.toExpr();
-      if (expr.nodeExpressions.length !== 0) {
+      const isRpn: boolean = expr.type === ExprType.RPN;
+      if (expr.nodeExpressions.length !== 0 && isRpn) {
+        // TODO: this if might be wrong
         this.flattenTree(res, expr.nodeExpressions);
       }
-      if (expr.type !== ExprType.RPN) {
+      if (!isRpn) {
         res.push(this.nodeToElement(node));
       }
     }
     return res;
   }
 
-  private static getProp(obj: {[key: string]: any}, key: string): RpnStack {
-    return obj[key];
-  }
-
   private evaluateExpression(expressionTree: Node[], getRef: boolean = false): Value {
-    // cache the result of flattenTree()
-    // let rpnStack: RpnStack = 'cache' in expressionTree ? Evaluator.getProp(expressionTree, 'cache') : Object.defineProperty(expressionTree, 'cache', {
-    //   value: this.flattenTree([], expressionTree)
-    // }).cache;
     let rpnStack: RpnStack = this.flattenTree([], expressionTree);
     let resStack: RpnStack = [];
     for (const token of rpnStack) {

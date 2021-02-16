@@ -62,7 +62,6 @@ class Lexer {
                         tokenString += this.code[this.ptr];
                     }
                     this.ptr--;
-                    const strTokenType = token_1.TokenType[tokenString.toUpperCase()];
                     if (tokenString === 'include') {
                         this.ptr++;
                         this.consumeWhitespace();
@@ -81,7 +80,8 @@ class Lexer {
                         }
                         this.tokens.push(...toks);
                     }
-                    else if (strTokenType !== undefined) {
+                    else if (Lexer.allowedTokenKeys.includes(tokenString)) {
+                        const strTokenType = token_1.TokenType[tokenString.toUpperCase()];
                         this.addToken(strTokenType, '');
                     }
                     else {
@@ -276,6 +276,10 @@ class Lexer {
 exports.Lexer = Lexer;
 Lexer.chars = ".,:;{}[]()~$#";
 Lexer.chars2 = "=+-*&|/<>!%^";
+Lexer.allowedTokenKeys = [
+    'function', 'class', 'array', 'return', 'if', 'else', 'for', 'while',
+    'break', 'continue', 'alloc', 'del', 'ref', 'true', 'false', 'const'
+];
 Lexer.regexes = [
     new RegExp(String.raw `\\n`),
     new RegExp(String.raw `\\t`),

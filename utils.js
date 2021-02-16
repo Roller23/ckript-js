@@ -46,15 +46,15 @@ class Utils {
 }
 exports.Utils = Utils;
 Utils.varLUT = {
-    ['double']: VarType.FLOAT,
-    ['int']: VarType.INT,
-    ['str']: VarType.STR,
-    ['arr']: VarType.ARR,
-    ['obj']: VarType.OBJ,
-    ['bool']: VarType.BOOL,
-    ['func']: VarType.FUNC,
-    ['class']: VarType.CLASS,
-    ['void']: VarType.VOID
+    double: VarType.FLOAT,
+    int: VarType.INT,
+    str: VarType.STR,
+    arr: VarType.ARR,
+    obj: VarType.OBJ,
+    bool: VarType.BOOL,
+    func: VarType.FUNC,
+    class: VarType.CLASS,
+    void: VarType.VOID
 };
 Utils.opPrecedence = {
     [token_1.TokenType.AND_ASSIGN]: 1,

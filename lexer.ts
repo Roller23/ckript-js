@@ -16,6 +16,11 @@ export class Lexer {
   private static chars: string = ".,:;{}[]()~$#";
   private static chars2: string = "=+-*&|/<>!%^";
 
+  private static allowedTokenKeys: string[] = [
+    'function', 'class', 'array', 'return', 'if', 'else', 'for', 'while',
+    'break', 'continue', 'alloc', 'del', 'ref', 'true', 'false', 'const'
+  ]
+
   private static regexes: RegExp[] = [
     new RegExp(String.raw`\\n`),
     new RegExp(String.raw`\\t`),
@@ -85,7 +90,6 @@ export class Lexer {
             tokenString += this.code[this.ptr];
           }
           this.ptr--;
-          const strTokenType: TokenType = TokenType[tokenString.toUpperCase() as keyof typeof TokenType];
           if (tokenString === 'include') {
             this.ptr++;
             this.consumeWhitespace();
@@ -103,7 +107,8 @@ export class Lexer {
               this.throwError(`Couldn't include file ${path}`);
             }
             this.tokens.push(...toks);
-          } else if (strTokenType !== undefined) {
+          } else if (Lexer.allowedTokenKeys.includes(tokenString)) {
+            const strTokenType: TokenType = TokenType[tokenString.toUpperCase() as keyof typeof TokenType];
             this.addToken(strTokenType, '');
           } else {
             if (!Lexer.builtinTypes.includes(tokenString)) {

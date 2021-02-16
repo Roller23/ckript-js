@@ -599,6 +599,7 @@ export class Parser {
       this.advance(); // skip the boolean
       return boolean;
     }
+    console.log(this.currToken);
     this.throwError(`expected an expression, but ${this.currToken.getName()} found`, this.currToken);
     return new Node(null);
   }

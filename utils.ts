@@ -8,15 +8,15 @@ export enum VarType {
 export class Utils {
 
   public static varLUT: {[key: string]: VarType} = {
-    ['double']: VarType.FLOAT,
-    ['int']: VarType.INT,
-    ['str']: VarType.STR,
-    ['arr']: VarType.ARR,
-    ['obj']: VarType.OBJ,
-    ['bool']: VarType.BOOL,
-    ['func']: VarType.FUNC,
-    ['class']: VarType.CLASS,
-    ['void']: VarType.VOID
+    double: VarType.FLOAT,
+    int: VarType.INT,
+    str: VarType.STR,
+    arr: VarType.ARR,
+    obj: VarType.OBJ,
+    bool: VarType.BOOL,
+    func: VarType.FUNC,
+    class: VarType.CLASS,
+    void: VarType.VOID
   };
 
   public static opPrecedence: {[key: number]: number} = {
