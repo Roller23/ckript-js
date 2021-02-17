@@ -1,14 +1,16 @@
 import {Token, TokenType} from './token'
 import {ErrorHandler} from './error-handler'
 import { existsSync, readFileSync } from 'fs';
+import path from 'path';
 
 export class Lexer {
   private tokens: Token[] = [];
   private deletedSpaces: number = 0;
   private prevDeletedSpaces: number = 0;
   private currentLine: number = 1;
-  private sourceFile: string = '';
-  private fileDir: string = '';
+  private baseDir: string = '';
+  private baseName: string = '';
+  private fullPath: string = '';
   private ptr: number = 0;
   private end: number = 0;
   private code: string = '';
@@ -57,7 +59,7 @@ export class Lexer {
   }
 
   private throwError(cause: string): void {
-    ErrorHandler.throwError(`Token error: ${cause} on line ${this.currentLine} in file ${this.sourceFile}`);
+    ErrorHandler.throwError(`Token error: ${cause} (${this.baseName}:${this.currentLine})`);
   }
 
   private consumeWhitespace(): void {
@@ -68,7 +70,7 @@ export class Lexer {
   }
 
   private addToken(type: TokenType, value: string): void {
-    this.tokens.push(new Token(type, value, this.sourceFile, this.currentLine));
+    this.tokens.push(new Token(type, value, this.baseName, this.currentLine));
   }
 
   tokenize(code: string): Token[] {
@@ -98,7 +100,7 @@ export class Lexer {
               this.throwError('Expected a string literal after include');
             }
             this.ptr++;
-            let path: string = `${this.fileDir}`;
+            let path: string = `${this.baseDir}/`;
             while (this.code[this.ptr] !== c && this.ptr !== this.end) {
               path += this.code[this.ptr++];
             }
@@ -256,15 +258,10 @@ export class Lexer {
     if (!existsSync(filename)) {
       return [[], true];
     }
-    this.sourceFile = filename;
-    const slash: number = filename.lastIndexOf('/');
-    const pos: number = slash === -1 ? filename.lastIndexOf('\\') : slash;
-    if (pos !== -1) {
-      this.fileDir = filename.substr(0, pos);
-      this.sourceFile = filename.substr(pos + 1);
-      console.log(this.fileDir, this.sourceFile);
-    }
-    const toks = this.tokenize(readFileSync(filename, {encoding: 'utf-8'}));
+    this.fullPath = path.resolve(filename);
+    this.baseName = path.basename(this.fullPath);
+    this.baseDir = path.dirname(this.fullPath);
+    const toks: Token[] = this.tokenize(readFileSync(filename, {encoding: 'utf-8'}));
     return [toks, false];
   }
 

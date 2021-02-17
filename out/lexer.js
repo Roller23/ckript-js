@@ -1,17 +1,22 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Lexer = void 0;
 const token_1 = require("./token");
 const error_handler_1 = require("./error-handler");
 const fs_1 = require("fs");
+const path_1 = __importDefault(require("path"));
 class Lexer {
     constructor() {
         this.tokens = [];
         this.deletedSpaces = 0;
         this.prevDeletedSpaces = 0;
         this.currentLine = 1;
-        this.sourceFile = '';
-        this.fileDir = '';
+        this.baseDir = '';
+        this.baseName = '';
+        this.fullPath = '';
         this.ptr = 0;
         this.end = 0;
         this.code = '';
@@ -29,7 +34,7 @@ class Lexer {
         return /\d/.test(char);
     }
     throwError(cause) {
-        error_handler_1.ErrorHandler.throwError(`Token error: ${cause} on line ${this.currentLine} in file ${this.sourceFile}`);
+        error_handler_1.ErrorHandler.throwError(`Token error: ${cause} (${this.baseName}:${this.currentLine})`);
     }
     consumeWhitespace() {
         while (this.ptr !== this.end && Lexer.isWhitespace(this.code[this.ptr])) {
@@ -39,7 +44,7 @@ class Lexer {
         }
     }
     addToken(type, value) {
-        this.tokens.push(new token_1.Token(type, value, this.sourceFile, this.currentLine));
+        this.tokens.push(new token_1.Token(type, value, this.baseName, this.currentLine));
     }
     tokenize(code) {
         this.ptr = 0;
@@ -70,7 +75,7 @@ class Lexer {
                             this.throwError('Expected a string literal after include');
                         }
                         this.ptr++;
-                        let path = `${this.fileDir}`;
+                        let path = `${this.baseDir}/`;
                         while (this.code[this.ptr] !== c && this.ptr !== this.end) {
                             path += this.code[this.ptr++];
                         }
@@ -261,14 +266,9 @@ class Lexer {
         if (!fs_1.existsSync(filename)) {
             return [[], true];
         }
-        this.sourceFile = filename;
-        const slash = filename.lastIndexOf('/');
-        const pos = slash === -1 ? filename.lastIndexOf('\\') : slash;
-        if (pos !== -1) {
-            this.fileDir = filename.substr(0, pos);
-            this.sourceFile = filename.substr(pos + 1);
-            console.log(this.fileDir, this.sourceFile);
-        }
+        this.fullPath = path_1.default.resolve(filename);
+        this.baseName = path_1.default.basename(this.fullPath);
+        this.baseDir = path_1.default.dirname(this.fullPath);
         const toks = this.tokenize(fs_1.readFileSync(filename, { encoding: 'utf-8' }));
         return [toks, false];
     }
