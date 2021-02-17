@@ -1,7 +1,6 @@
 import {ErrorHandler} from './error-handler';
 import {Token, TokenType} from './token'
 import {ClassStatement, Declaration, DeclType, Expression, ExprType, FuncExpression, FuncParam, Node, NodeType, Statement, StmtType} from './ast'
-import {Lexer} from './lexer';
 import { Utils } from './utils';
 
 export class Parser {
@@ -33,13 +32,6 @@ export class Parser {
     }
   }
 
-  private retreat(): void {
-    if (this.pos === 0) return;
-    this.pos--;
-    this.currToken = this.tokens[this.pos];
-    this.prev = this.pos > 0 ? this.tokens[this.pos - 1] : Token.getDefault();
-  }
-
   private lookahead(offset: number): Token {
     if (this.pos + offset < 0) return Token.getDefault();
     if (this.pos + offset >= this.tokens.length) return Token.getDefault();
@@ -66,33 +58,11 @@ export class Parser {
     }
   }
 
-  private findEnclosingParen() {
-    let startPos: number = this.pos;
-    let i: number = 0;
-    const size: number = this.tokens.length;
-    let lparen: number = 1;
-    while (true) {
-      if (size === i) {
-        this.throwError('Invalid expression, no enclosing parenthesis found', this.tokens[startPos + i - 1]);
-      }
-      if (this.tokens[startPos + i].type === TokenType.LEFT_PAREN) {
-        lparen++;
-      }
-      if (this.tokens[startPos + i].type === TokenType.LEFT_PAREN) {
-        lparen--;
-        if (lparen === 0) {
-          return i;
-        }
-      }
-      i++;
-    }
-  }
-
   private findBlockEnd(): number {
     return this.findEnclosingBrace(this.pos);
   }
 
-  private getManyStatements(node: Node, stop: TokenType): Node[] {
+  private getManyStatements(node: Node): Node[] {
     let res: Node[] = [];
     while (true) {
       let statement: Node = this.getStatement(node, this.terminal);
@@ -606,7 +576,7 @@ export class Parser {
 
   public parse(): [Node, number] {
     let block: Node = new Node(null);
-    let instructions: Node[] = this.getManyStatements(block, this.terminal);
+    let instructions: Node[] = this.getManyStatements(block);
     block.addChildren(instructions);
     return [block, this.pos];
   }

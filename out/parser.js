@@ -34,13 +34,6 @@ class Parser {
             this.pos--;
         }
     }
-    retreat() {
-        if (this.pos === 0)
-            return;
-        this.pos--;
-        this.currToken = this.tokens[this.pos];
-        this.prev = this.pos > 0 ? this.tokens[this.pos - 1] : token_1.Token.getDefault();
-    }
     lookahead(offset) {
         if (this.pos + offset < 0)
             return token_1.Token.getDefault();
@@ -67,31 +60,10 @@ class Parser {
             i++;
         }
     }
-    findEnclosingParen() {
-        let startPos = this.pos;
-        let i = 0;
-        const size = this.tokens.length;
-        let lparen = 1;
-        while (true) {
-            if (size === i) {
-                this.throwError('Invalid expression, no enclosing parenthesis found', this.tokens[startPos + i - 1]);
-            }
-            if (this.tokens[startPos + i].type === token_1.TokenType.LEFT_PAREN) {
-                lparen++;
-            }
-            if (this.tokens[startPos + i].type === token_1.TokenType.LEFT_PAREN) {
-                lparen--;
-                if (lparen === 0) {
-                    return i;
-                }
-            }
-            i++;
-        }
-    }
     findBlockEnd() {
         return this.findEnclosingBrace(this.pos);
     }
-    getManyStatements(node, stop) {
+    getManyStatements(node) {
         let res = [];
         while (true) {
             let statement = this.getStatement(node, this.terminal);
@@ -626,7 +598,7 @@ class Parser {
     }
     parse() {
         let block = new ast_1.Node(null);
-        let instructions = this.getManyStatements(block, this.terminal);
+        let instructions = this.getManyStatements(block);
         block.addChildren(instructions);
         return [block, this.pos];
     }

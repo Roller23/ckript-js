@@ -874,7 +874,7 @@ export class Evaluator {
       return Evaluator.FLAG_OK;
     } else if (stmt.type === StmtType.EXPR) {
       if (stmt.expressions.length !== 1) return Evaluator.FLAG_OK;
-      const res: Value = this.evaluateExpression(stmt.expressions[0]);
+      this.evaluateExpression(stmt.expressions[0]);
       return Evaluator.FLAG_OK;
     } else if (stmt.type === StmtType.CLASS) {
       this.registerClass(stmt.classStmt!);
@@ -1169,6 +1169,8 @@ export class Evaluator {
               resStack.push(this.orAssign(x, y));
             } else if (token.op.type === TokenType.XOR_ASSIGN) {
               resStack.push(this.xorAssign(x, y));
+            } else if (token.op.type === TokenType.MOD_ASSIGN) {
+              resStack.push(this.modAssign(x, y));
             } else {
               this.throwError(`Unknown binary operator ${Token.getName(token.op.type)}`);
             }
