@@ -65,7 +65,7 @@ class Evaluator {
         this.AST = AST;
     }
     throwError(cause) {
-        error_handler_1.ErrorHandler.throwError(`Runtime error: ${cause} on line ${this.currentLine} in file ${this.currentSource}`);
+        error_handler_1.ErrorHandler.throwError(`Runtime error: ${cause} (${this.currentSource}:${this.currentLine})`);
     }
     getHeapVal(ref) {
         if (ref < 0 || ref >= this.VM.heap.chunks.length) {

@@ -16,7 +16,7 @@ class Parser {
         this.currToken = this.tokensCount ? this.tokens[0] : token_1.Token.getDefault();
     }
     throwError(cause, token) {
-        error_handler_1.ErrorHandler.throwError(`Syntax error: ${cause} on line ${token.line} in file ${token.source}`);
+        error_handler_1.ErrorHandler.throwError(`Syntax error: ${cause} (${token.line}:${token.source})`);
     }
     failIfEOF(expected) {
         if (this.currToken.type === token_1.TokenType.NONE) {

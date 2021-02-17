@@ -12,7 +12,7 @@ export class Parser {
   private terminal: TokenType;
 
   private throwError(cause: string, token: Token): void {
-    ErrorHandler.throwError(`Syntax error: ${cause} on line ${token.line} in file ${token.source}`);
+    ErrorHandler.throwError(`Syntax error: ${cause} (${token.line}:${token.source})`);
   }
 
   private failIfEOF(expected: TokenType): void {

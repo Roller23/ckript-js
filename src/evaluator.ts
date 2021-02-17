@@ -72,7 +72,7 @@ export class Evaluator {
   }
 
   public throwError(cause: string) {
-    ErrorHandler.throwError(`Runtime error: ${cause} on line ${this.currentLine} in file ${this.currentSource}`);
+    ErrorHandler.throwError(`Runtime error: ${cause} (${this.currentSource}:${this.currentLine})`);
   }
 
   private getHeapVal(ref: number): Value {
