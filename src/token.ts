@@ -13,7 +13,7 @@ export enum TokenType {
   FUNCTION = 130, RETURN, IF, ELSE, BREAK, CONTINUE,
   FOR, WHILE, ALLOC, DEL, TYPE, REF, CONST,
 
-  STRING_LITERAL, DECIMAL, FLOAT, HEX, OCTAL, BINARY, ARRAY, CLASS,
+  STRING_LITERAL, NUMBER, ARRAY, CLASS,
 
   PLUS_ASSIGN, MINUS_ASSIGN, MUL_ASSIGN, DIV_ASSIGN, MOD_ASSIGN,
   LSHIFT_ASSIGN, RSHIFT_ASSIGN, AND_ASSIGN, OR_ASSIGN, XOR_ASSIGN,
@@ -70,10 +70,7 @@ export class Token {
     [TokenType.REF]: 'ref',
     [TokenType.CONST]: 'const',
     [TokenType.STRING_LITERAL]: 'string',
-    [TokenType.DECIMAL]: 'integer number',
-    [TokenType.FLOAT]: 'floating point number',
-    [TokenType.HEX]: 'hex number',
-    [TokenType.BINARY]: 'binary number',
+    [TokenType.NUMBER]: 'number',
     [TokenType.ARRAY]: 'array',
     [TokenType.CLASS]: 'class',
     [TokenType.OP_EQ]: '==',

@@ -567,7 +567,7 @@ class Parser {
             this.failIfEOF(token_1.TokenType.GENERAL_EXPRESSION);
             return new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BINARY_OP, tokenType));
         }
-        else if (utils_1.Utils.isNumber(this.currToken.type)) {
+        else if (this.currToken.type === token_1.TokenType.NUMBER) {
             const isNegative = this.currToken.value[0] === '-';
             let arg = Number(this.currToken.value.substr(isNegative ? 1 : 0));
             if (isNegative) {
@@ -576,16 +576,6 @@ class Parser {
             const numLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.NUM_EXPR, arg));
             this.advance(); // skip the number
             return numLiteral;
-        }
-        else if (this.currToken.type === token_1.TokenType.FLOAT) {
-            const isNegative = this.currToken.value[0] === '-';
-            let float = Number(this.currToken.value.substr(isNegative ? 1 : 0));
-            if (isNegative) {
-                float = -float;
-            }
-            const floatLiteral = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.FLOAT_EXPR, float));
-            this.advance(); // skip the float
-            return floatLiteral;
         }
         else if (this.currToken.type === token_1.TokenType.TRUE || this.currToken.type === token_1.TokenType.FALSE) {
             const boolean = new ast_1.Node(new ast_1.Expression(ast_1.ExprType.BOOL_EXPR, this.currToken.type === token_1.TokenType.TRUE));

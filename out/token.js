@@ -42,38 +42,34 @@ var TokenType;
     TokenType[TokenType["REF"] = 141] = "REF";
     TokenType[TokenType["CONST"] = 142] = "CONST";
     TokenType[TokenType["STRING_LITERAL"] = 143] = "STRING_LITERAL";
-    TokenType[TokenType["DECIMAL"] = 144] = "DECIMAL";
-    TokenType[TokenType["FLOAT"] = 145] = "FLOAT";
-    TokenType[TokenType["HEX"] = 146] = "HEX";
-    TokenType[TokenType["OCTAL"] = 147] = "OCTAL";
-    TokenType[TokenType["BINARY"] = 148] = "BINARY";
-    TokenType[TokenType["ARRAY"] = 149] = "ARRAY";
-    TokenType[TokenType["CLASS"] = 150] = "CLASS";
-    TokenType[TokenType["PLUS_ASSIGN"] = 151] = "PLUS_ASSIGN";
-    TokenType[TokenType["MINUS_ASSIGN"] = 152] = "MINUS_ASSIGN";
-    TokenType[TokenType["MUL_ASSIGN"] = 153] = "MUL_ASSIGN";
-    TokenType[TokenType["DIV_ASSIGN"] = 154] = "DIV_ASSIGN";
-    TokenType[TokenType["MOD_ASSIGN"] = 155] = "MOD_ASSIGN";
-    TokenType[TokenType["LSHIFT_ASSIGN"] = 156] = "LSHIFT_ASSIGN";
-    TokenType[TokenType["RSHIFT_ASSIGN"] = 157] = "RSHIFT_ASSIGN";
-    TokenType[TokenType["AND_ASSIGN"] = 158] = "AND_ASSIGN";
-    TokenType[TokenType["OR_ASSIGN"] = 159] = "OR_ASSIGN";
-    TokenType[TokenType["XOR_ASSIGN"] = 160] = "XOR_ASSIGN";
-    TokenType[TokenType["LSHIFT"] = 161] = "LSHIFT";
-    TokenType[TokenType["RSHIFT"] = 162] = "RSHIFT";
-    TokenType[TokenType["OP_AND"] = 163] = "OP_AND";
-    TokenType[TokenType["OP_OR"] = 164] = "OP_OR";
-    TokenType[TokenType["OP_EQ"] = 165] = "OP_EQ";
-    TokenType[TokenType["OP_NOT_EQ"] = 166] = "OP_NOT_EQ";
-    TokenType[TokenType["OP_GT_EQ"] = 167] = "OP_GT_EQ";
-    TokenType[TokenType["OP_LT_EQ"] = 168] = "OP_LT_EQ";
-    TokenType[TokenType["IDENTIFIER"] = 169] = "IDENTIFIER";
-    TokenType[TokenType["FALSE"] = 170] = "FALSE";
-    TokenType[TokenType["TRUE"] = 171] = "TRUE";
-    TokenType[TokenType["UNKNOWN"] = 172] = "UNKNOWN";
-    TokenType[TokenType["NONE"] = 173] = "NONE";
-    TokenType[TokenType["GENERAL_EXPRESSION"] = 174] = "GENERAL_EXPRESSION";
-    TokenType[TokenType["GENERAL_STATEMENT"] = 175] = "GENERAL_STATEMENT";
+    TokenType[TokenType["NUMBER"] = 144] = "NUMBER";
+    TokenType[TokenType["ARRAY"] = 145] = "ARRAY";
+    TokenType[TokenType["CLASS"] = 146] = "CLASS";
+    TokenType[TokenType["PLUS_ASSIGN"] = 147] = "PLUS_ASSIGN";
+    TokenType[TokenType["MINUS_ASSIGN"] = 148] = "MINUS_ASSIGN";
+    TokenType[TokenType["MUL_ASSIGN"] = 149] = "MUL_ASSIGN";
+    TokenType[TokenType["DIV_ASSIGN"] = 150] = "DIV_ASSIGN";
+    TokenType[TokenType["MOD_ASSIGN"] = 151] = "MOD_ASSIGN";
+    TokenType[TokenType["LSHIFT_ASSIGN"] = 152] = "LSHIFT_ASSIGN";
+    TokenType[TokenType["RSHIFT_ASSIGN"] = 153] = "RSHIFT_ASSIGN";
+    TokenType[TokenType["AND_ASSIGN"] = 154] = "AND_ASSIGN";
+    TokenType[TokenType["OR_ASSIGN"] = 155] = "OR_ASSIGN";
+    TokenType[TokenType["XOR_ASSIGN"] = 156] = "XOR_ASSIGN";
+    TokenType[TokenType["LSHIFT"] = 157] = "LSHIFT";
+    TokenType[TokenType["RSHIFT"] = 158] = "RSHIFT";
+    TokenType[TokenType["OP_AND"] = 159] = "OP_AND";
+    TokenType[TokenType["OP_OR"] = 160] = "OP_OR";
+    TokenType[TokenType["OP_EQ"] = 161] = "OP_EQ";
+    TokenType[TokenType["OP_NOT_EQ"] = 162] = "OP_NOT_EQ";
+    TokenType[TokenType["OP_GT_EQ"] = 163] = "OP_GT_EQ";
+    TokenType[TokenType["OP_LT_EQ"] = 164] = "OP_LT_EQ";
+    TokenType[TokenType["IDENTIFIER"] = 165] = "IDENTIFIER";
+    TokenType[TokenType["FALSE"] = 166] = "FALSE";
+    TokenType[TokenType["TRUE"] = 167] = "TRUE";
+    TokenType[TokenType["UNKNOWN"] = 168] = "UNKNOWN";
+    TokenType[TokenType["NONE"] = 169] = "NONE";
+    TokenType[TokenType["GENERAL_EXPRESSION"] = 170] = "GENERAL_EXPRESSION";
+    TokenType[TokenType["GENERAL_STATEMENT"] = 171] = "GENERAL_STATEMENT";
 })(TokenType = exports.TokenType || (exports.TokenType = {}));
 ;
 class Token {
@@ -125,10 +121,7 @@ Token.nameLUT = {
     [TokenType.REF]: 'ref',
     [TokenType.CONST]: 'const',
     [TokenType.STRING_LITERAL]: 'string',
-    [TokenType.DECIMAL]: 'integer number',
-    [TokenType.FLOAT]: 'floating point number',
-    [TokenType.HEX]: 'hex number',
-    [TokenType.BINARY]: 'binary number',
+    [TokenType.NUMBER]: 'number',
     [TokenType.ARRAY]: 'array',
     [TokenType.CLASS]: 'class',
     [TokenType.OP_EQ]: '==',

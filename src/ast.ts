@@ -14,7 +14,7 @@ export enum StmtType {
 }
 
 export enum ExprType {
-  BINARY_OP, UNARY_OP, FUNC_CALL, FUNC_EXPR, NUM_EXPR, FLOAT_EXPR, STR_EXPR,
+  BINARY_OP, UNARY_OP, FUNC_CALL, FUNC_EXPR, NUM_EXPR, STR_EXPR,
   IDENTIFIER_EXPR, BOOL_EXPR, NOP, RPN, LPAREN, RPAREN, INDEX, ARRAY, NONE
 }
 
@@ -62,8 +62,6 @@ export class Expression {
       this.literal = arg;
     } else if (this.type === ExprType.NUM_EXPR) {
       this.literal = arg;
-    } else if (this.type === ExprType.FLOAT_EXPR) {
-      this.literal = arg;
     }
   }
 }
@@ -77,7 +75,7 @@ export class FuncExpression {
 }
 
 export class FuncParam {
-  public typeName: string = 'int';
+  public typeName: string = 'num';
   public paramName: string = '';
   public isRef: boolean = false;
   public constructor(type: string, name: string) {

@@ -116,7 +116,7 @@ class Evaluator {
         else if (val.type === utils_1.VarType.BOOL) {
             return val.value ? 'true' : 'false';
         }
-        else if (val.type === utils_1.VarType.FLOAT || val.type === utils_1.VarType.INT) {
+        else if (val.type === utils_1.VarType.NUM) {
             return val.value.toString();
         }
         else if (val.type === utils_1.VarType.FUNC) {
@@ -141,13 +141,6 @@ class Evaluator {
             return `variable (${val.referenceName})`;
         }
         return '';
-    }
-    toDouble(val) {
-        if (val.type === utils_1.VarType.FLOAT || val.type === utils_1.VarType.INT) {
-            return val.value;
-        }
-        this.throwError(`Cannot convert ${this.stringify(val)} to double`);
-        return 0;
     }
     static makeCopy(val) {
         if (Evaluator.primitiveTypes.includes(val.type)) {
@@ -240,7 +233,7 @@ class Evaluator {
                 this.throwError(`${this.stringify(temp)} is not an array`);
             }
             const indexVal = this.evaluateExpression(index.toExpr().nodeExpressions); // not sure
-            if (indexVal.type !== utils_1.VarType.INT) {
+            if (indexVal.type !== utils_1.VarType.NUM || !Number.isInteger(indexVal.type)) {
                 this.throwError(`Cannot access array with ${this.stringify(indexVal)}`);
             }
             if (indexVal.value < 0 || indexVal.value >= temp.arrayValues.length) {
@@ -266,8 +259,8 @@ class Evaluator {
     }
     bitwiseNot(x) {
         const xVal = this.getValue(x);
-        if (xVal.type === utils_1.VarType.INT) {
-            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.INT, ~xVal.value));
+        if (xVal.type === utils_1.VarType.NUM) {
+            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.NUM, ~xVal.value));
         }
         this.throwError(`Cannot perform bitwise not on ${this.stringify(xVal)}`);
         return new RpnElement(ElementType.UNKNOWN);
@@ -323,14 +316,9 @@ class Evaluator {
             val.value = this.stringify(xVal) + this.stringify(yVal);
             return Evaluator.RpnVal(val);
         }
-        else if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT);
+        else if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM);
             val.value = xVal.value + yVal.value;
-            return Evaluator.RpnVal(val);
-        }
-        else if (xVal.type === utils_1.VarType.FLOAT || yVal.type === utils_1.VarType.FLOAT) {
-            let val = new vm_1.Value(utils_1.VarType.FLOAT);
-            val.value = this.toDouble(xVal) + this.toDouble(yVal);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform addition on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -339,11 +327,11 @@ class Evaluator {
     performSubtraction(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value - yVal.value);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value - yVal.value);
             return Evaluator.RpnVal(val);
         }
-        else if (xVal.type === utils_1.VarType.ARR && yVal.type === utils_1.VarType.INT) {
+        else if (xVal.type === utils_1.VarType.ARR && yVal.isInteger()) {
             let xValCpy = Evaluator.makeCopy(xVal);
             if (yVal.value < 0 || yVal.value >= xValCpy.arrayValues.length) {
                 this.throwError(`Cannot remove index [${yVal.value}] (out of range)`);
@@ -351,24 +339,14 @@ class Evaluator {
             xValCpy.arrayValues.splice(yVal.value, 1);
             return Evaluator.RpnVal(xValCpy);
         }
-        else if (xVal.type === utils_1.VarType.FLOAT || yVal.type === utils_1.VarType.FLOAT) {
-            let val = new vm_1.Value(utils_1.VarType.FLOAT);
-            val.value = this.toDouble(xVal) - this.toDouble(yVal);
-            return Evaluator.RpnVal(val);
-        }
         this.throwError(`Cannot perform subtraction on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
         return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.UNKNOWN));
     }
     performMultiplication(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value * yVal.value);
-            return Evaluator.RpnVal(val);
-        }
-        else if (xVal.type === utils_1.VarType.FLOAT || yVal.type === utils_1.VarType.FLOAT) {
-            let val = new vm_1.Value(utils_1.VarType.FLOAT);
-            val.value = this.toDouble(xVal) * this.toDouble(yVal);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value * yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform multiplication on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -377,21 +355,11 @@ class Evaluator {
     performDivision(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
             if (yVal.value === 0) {
                 this.throwError('Cannot divide by zero');
             }
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value / yVal.value);
-            return Evaluator.RpnVal(val);
-        }
-        else if (xVal.type === utils_1.VarType.FLOAT || yVal.type === utils_1.VarType.FLOAT) {
-            let val = new vm_1.Value(utils_1.VarType.FLOAT);
-            const f1 = this.toDouble(xVal);
-            const f2 = this.toDouble(xVal);
-            if (f2 === 0.0) {
-                this.throwError('Cannot divide by zero');
-            }
-            val.value = f1 / f2;
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value / yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform division on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -400,11 +368,11 @@ class Evaluator {
     performModulo(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
             if (yVal.value === 0) {
                 this.throwError('Cannot divide by zero');
             }
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value % yVal.value);
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value % yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform modulo on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -413,8 +381,8 @@ class Evaluator {
     bitwiseAnd(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value & yVal.value);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value & yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform bitwise and on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -423,8 +391,8 @@ class Evaluator {
     bitwiseOr(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value | yVal.value);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value | yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform bitwise or on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -433,8 +401,8 @@ class Evaluator {
     shiftLeft(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value << yVal.value);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value << yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform shift left and on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -443,8 +411,8 @@ class Evaluator {
     shiftRight(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value >> yVal.value);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value >> yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform bitwise shift right on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -463,8 +431,8 @@ class Evaluator {
                 this.throwError(`Cannot concatenate arrays of type ${xVal.arrayType} and ${yVal.arrayType}`);
             }
         }
-        if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
-            let val = new vm_1.Value(utils_1.VarType.INT, xVal.value ^ yVal.value);
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
+            let val = new vm_1.Value(utils_1.VarType.NUM, xVal.value ^ yVal.value);
             return Evaluator.RpnVal(val);
         }
         this.throwError(`Cannot perform bitwise xor on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -565,8 +533,8 @@ class Evaluator {
             this.throwError(`${this.stringify(array)} is not an array`);
         }
         const index = this.evaluateExpression(idx.op.indexRpn);
-        if (index.type !== utils_1.VarType.INT) {
-            this.throwError(`Index expected to be an int, but ${this.stringify(index)} found`);
+        if (!index.isInteger()) {
+            this.throwError(`Index expected to be an integer, but ${this.stringify(index)} found`);
         }
         if (index.value < 0 || index.value >= array.arrayValues.length) {
             this.throwError(`index [${index.value}] out of range`);
@@ -577,12 +545,7 @@ class Evaluator {
     compareEq(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.FLOAT || yVal.type === utils_1.VarType.FLOAT) {
-            let val = new vm_1.Value(utils_1.VarType.BOOL);
-            val.value = this.toDouble(xVal) === this.toDouble(yVal);
-            return Evaluator.RpnVal(val);
-        }
-        else if ((xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) ||
+        if ((xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) ||
             (xVal.type === utils_1.VarType.STR && yVal.type === utils_1.VarType.STR) ||
             (xVal.type === utils_1.VarType.BOOL && yVal.type === utils_1.VarType.BOOL)) {
             let val = new vm_1.Value(utils_1.VarType.BOOL, xVal.value === yVal.value);
@@ -599,12 +562,7 @@ class Evaluator {
     compareGt(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
-        if (xVal.type === utils_1.VarType.FLOAT || yVal.type === utils_1.VarType.FLOAT) {
-            let val = new vm_1.Value(utils_1.VarType.BOOL);
-            val.value = this.toDouble(xVal) > this.toDouble(yVal);
-            return Evaluator.RpnVal(val);
-        }
-        else if (xVal.type === utils_1.VarType.INT && yVal.type === utils_1.VarType.INT) {
+        if (xVal.type === utils_1.VarType.NUM && yVal.type === utils_1.VarType.NUM) {
             let val = new vm_1.Value(utils_1.VarType.BOOL, xVal.value > yVal.value);
             return Evaluator.RpnVal(val);
         }
@@ -1025,11 +983,8 @@ class Evaluator {
         else if (expr.type === ast_1.ExprType.STR_EXPR) {
             return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.STR, expr.literal));
         }
-        else if (expr.type === ast_1.ExprType.FLOAT_EXPR) {
-            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.FLOAT, expr.literal));
-        }
         else if (expr.type === ast_1.ExprType.NUM_EXPR) {
-            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.INT, expr.literal));
+            return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.NUM, expr.literal));
         }
         else if (expr.type === ast_1.ExprType.IDENTIFIER_EXPR) {
             let res = Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.ID));
@@ -1044,7 +999,7 @@ class Evaluator {
         }
         else if (expr.type === ast_1.ExprType.ARRAY) {
             let val = new vm_1.Value(utils_1.VarType.ARR);
-            let initialSize = new vm_1.Value(utils_1.VarType.INT);
+            let initialSize = new vm_1.Value(utils_1.VarType.NUM);
             let elementsCount = 0;
             if (expr.argsList.length !== 0 && expr.argsList[0].length !== 0) {
                 elementsCount = expr.argsList.length;
@@ -1052,8 +1007,8 @@ class Evaluator {
             initialSize.value = elementsCount;
             if (expr.arraySize.length > 0) {
                 initialSize = this.evaluateExpression(expr.arraySize);
-                if (initialSize.type !== utils_1.VarType.INT) {
-                    this.throwError(`Number expected, but ${this.stringify(initialSize)} found`);
+                if (!initialSize.isInteger()) {
+                    this.throwError(`Integer expected, but ${this.stringify(initialSize)} found`);
                 }
                 if (initialSize.value < 0) {
                     this.throwError('Array size cannot be negative');
@@ -1292,5 +1247,5 @@ Evaluator.FLAG_CONTINUE = 2;
 Evaluator.FLAG_RETURN = 3;
 Evaluator.FLAG_ERROR = 4;
 Evaluator.primitiveTypes = [
-    utils_1.VarType.BOOL, utils_1.VarType.FLOAT, utils_1.VarType.INT, utils_1.VarType.STR
+    utils_1.VarType.BOOL, utils_1.VarType.NUM, utils_1.VarType.STR
 ];

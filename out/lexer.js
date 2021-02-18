@@ -126,12 +126,11 @@ class Lexer {
                         numberStr += this.code[this.ptr++];
                     }
                     this.ptr--;
-                    let converted = false;
                     let negation = this.tokens.length !== 0 && this.tokens[this.tokens.length - 1].type === token_1.TokenType.OP_MINUS && !this.deletedSpaces;
                     if (negation && !this.prevDeletedSpaces) {
                         if (this.tokens.length !== 0) {
                             const t = this.tokens[this.tokens.length - 1].type;
-                            if (t === token_1.TokenType.IDENTIFIER || t === token_1.TokenType.BINARY || t === token_1.TokenType.DECIMAL || t === token_1.TokenType.FLOAT || t === token_1.TokenType.LEFT_PAREN) {
+                            if (t === token_1.TokenType.IDENTIFIER || t === token_1.TokenType.NUMBER || t === token_1.TokenType.LEFT_PAREN) {
                                 negation = false;
                             }
                         }
@@ -141,28 +140,10 @@ class Lexer {
                         this.tokens.pop();
                     }
                     const convertedNum = Number(numberStr);
-                    if (!isNaN(convertedNum)) {
-                        converted = true;
+                    if (isNaN(convertedNum)) {
+                        this.throwError(`${numberStr} is not a number`);
                     }
-                    if (numberStr.includes('x')) {
-                        if (converted)
-                            this.addToken(token_1.TokenType.HEX, numberStr);
-                    }
-                    else if (numberStr.includes('b') && numberStr.length > 2) {
-                        if (converted)
-                            this.addToken(token_1.TokenType.BINARY, numberStr);
-                    }
-                    else if (numberStr.includes('.')) {
-                        if (converted)
-                            this.addToken(token_1.TokenType.FLOAT, numberStr);
-                    }
-                    else {
-                        if (converted)
-                            this.addToken(token_1.TokenType.DECIMAL, numberStr);
-                    }
-                    if (!converted) {
-                        throw new Error(numberStr + ' is not a number');
-                    }
+                    this.addToken(token_1.TokenType.NUMBER, numberStr);
                 }
                 else if (Lexer.chars2.includes(c)) {
                     let op = '';
@@ -292,7 +273,6 @@ Lexer.regexActual = [
     "\n", "\t", "\a", "\r", "\b", "\v"
 ];
 Lexer.builtinTypes = [
-    "int", "double",
-    "func", "str", "void",
+    "num", "func", "str", "void",
     "obj", "arr", "bool"
 ];

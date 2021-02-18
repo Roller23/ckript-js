@@ -37,8 +37,7 @@ export class Lexer {
   ]
 
   private static builtinTypes: string[] = [
-    "int", "double",
-    "func", "str", "void",
+    "num", "func", "str", "void",
     "obj", "arr", "bool"
   ];
 
@@ -148,12 +147,11 @@ export class Lexer {
             numberStr += this.code[this.ptr++];
           }
           this.ptr--;
-          let converted: boolean = false;
           let negation: boolean = this.tokens.length !== 0 && this.tokens[this.tokens.length - 1].type === TokenType.OP_MINUS && !this.deletedSpaces;
           if (negation && !this.prevDeletedSpaces) {
             if (this.tokens.length !== 0) {
               const t: TokenType = this.tokens[this.tokens.length - 1].type;
-              if (t === TokenType.IDENTIFIER || t === TokenType.BINARY || t === TokenType.DECIMAL || t === TokenType.FLOAT || t === TokenType.LEFT_PAREN) {
+              if (t === TokenType.IDENTIFIER || t === TokenType.NUMBER || t === TokenType.LEFT_PAREN) {
                 negation = false;
               }
             }
@@ -163,21 +161,10 @@ export class Lexer {
             this.tokens.pop();
           }
           const convertedNum: number = Number(numberStr);
-          if (!isNaN(convertedNum)) {
-            converted = true;
+          if (isNaN(convertedNum)) {
+            this.throwError(`${numberStr} is not a number`);
           }
-          if (numberStr.includes('x')) {
-            if (converted) this.addToken(TokenType.HEX, numberStr);
-          } else if (numberStr.includes('b') && numberStr.length > 2) {
-            if (converted) this.addToken(TokenType.BINARY, numberStr);
-          } else if (numberStr.includes('.')) {
-            if (converted) this.addToken(TokenType.FLOAT, numberStr);
-          } else {
-            if (converted) this.addToken(TokenType.DECIMAL, numberStr);
-          }
-          if (!converted) {
-            throw new Error(numberStr + ' is not a number');
-          }
+          this.addToken(TokenType.NUMBER, numberStr);
         } else if (Lexer.chars2.includes(c)) {
           let op: string = '';
           while (Lexer.chars2.includes(this.code[this.ptr])) {

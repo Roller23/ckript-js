@@ -2,14 +2,13 @@ import { Expression, ExprType, Node } from "./ast";
 import { TokenType } from "./token";
 
 export enum VarType {
-  INT, FLOAT, STR, ARR, OBJ, BOOL, FUNC, REF, ID, VOID, CLASS, UNKNOWN
+  NUM, STR, ARR, OBJ, BOOL, FUNC, REF, ID, VOID, CLASS, UNKNOWN
 }
 
 export class Utils {
 
   public static varLUT: {[key: string]: VarType} = {
-    double: VarType.FLOAT,
-    int: VarType.INT,
+    num: VarType.NUM,
     str: VarType.STR,
     arr: VarType.ARR,
     obj: VarType.OBJ,
@@ -63,10 +62,6 @@ export class Utils {
 
   public static opBinary(token: TokenType): boolean {
     return Utils.hasKey(token) && !Utils.opUnary(token);
-  }
-
-  public static isNumber(token: TokenType): boolean {
-    return token === TokenType.DECIMAL || token === TokenType.HEX || token === TokenType.BINARY;
   }
 
   public static getPrecedence(e: Expression): number {

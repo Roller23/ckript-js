@@ -39,17 +39,16 @@ var ExprType;
     ExprType[ExprType["FUNC_CALL"] = 2] = "FUNC_CALL";
     ExprType[ExprType["FUNC_EXPR"] = 3] = "FUNC_EXPR";
     ExprType[ExprType["NUM_EXPR"] = 4] = "NUM_EXPR";
-    ExprType[ExprType["FLOAT_EXPR"] = 5] = "FLOAT_EXPR";
-    ExprType[ExprType["STR_EXPR"] = 6] = "STR_EXPR";
-    ExprType[ExprType["IDENTIFIER_EXPR"] = 7] = "IDENTIFIER_EXPR";
-    ExprType[ExprType["BOOL_EXPR"] = 8] = "BOOL_EXPR";
-    ExprType[ExprType["NOP"] = 9] = "NOP";
-    ExprType[ExprType["RPN"] = 10] = "RPN";
-    ExprType[ExprType["LPAREN"] = 11] = "LPAREN";
-    ExprType[ExprType["RPAREN"] = 12] = "RPAREN";
-    ExprType[ExprType["INDEX"] = 13] = "INDEX";
-    ExprType[ExprType["ARRAY"] = 14] = "ARRAY";
-    ExprType[ExprType["NONE"] = 15] = "NONE";
+    ExprType[ExprType["STR_EXPR"] = 5] = "STR_EXPR";
+    ExprType[ExprType["IDENTIFIER_EXPR"] = 6] = "IDENTIFIER_EXPR";
+    ExprType[ExprType["BOOL_EXPR"] = 7] = "BOOL_EXPR";
+    ExprType[ExprType["NOP"] = 8] = "NOP";
+    ExprType[ExprType["RPN"] = 9] = "RPN";
+    ExprType[ExprType["LPAREN"] = 10] = "LPAREN";
+    ExprType[ExprType["RPAREN"] = 11] = "RPAREN";
+    ExprType[ExprType["INDEX"] = 12] = "INDEX";
+    ExprType[ExprType["ARRAY"] = 13] = "ARRAY";
+    ExprType[ExprType["NONE"] = 14] = "NONE";
 })(ExprType = exports.ExprType || (exports.ExprType = {}));
 class Expression {
     constructor(type, arg) {
@@ -92,9 +91,6 @@ class Expression {
         else if (this.type === ExprType.NUM_EXPR) {
             this.literal = arg;
         }
-        else if (this.type === ExprType.FLOAT_EXPR) {
-            this.literal = arg;
-        }
     }
     isOperand() {
         return this.type === ExprType.BINARY_OP || this.type === ExprType.UNARY_OP ||
@@ -120,7 +116,7 @@ class FuncExpression {
 exports.FuncExpression = FuncExpression;
 class FuncParam {
     constructor(type, name) {
-        this.typeName = 'int';
+        this.typeName = 'num';
         this.paramName = '';
         this.isRef = false;
         this.typeName = type;

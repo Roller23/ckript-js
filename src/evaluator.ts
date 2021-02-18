@@ -121,7 +121,7 @@ export class Evaluator {
       return <string>val.value;
     } else if (val.type === VarType.BOOL) {
       return val.value ? 'true' : 'false';
-    } else if (val.type === VarType.FLOAT || val.type === VarType.INT) {
+    } else if (val.type === VarType.NUM) {
       return val.value!.toString();
     } else if (val.type === VarType.FUNC) {
       return 'function';
@@ -141,16 +141,8 @@ export class Evaluator {
     return '';
   }
 
-  private toDouble(val: Value): number {
-    if (val.type === VarType.FLOAT || val.type === VarType.INT) {
-      return <number>val.value;
-    }
-    this.throwError(`Cannot convert ${this.stringify(val)} to double`);
-    return 0;
-  }
-
   private static primitiveTypes: VarType[] = [
-    VarType.BOOL, VarType.FLOAT, VarType.INT, VarType.STR
+    VarType.BOOL, VarType.NUM, VarType.STR
   ];
 
   private static makeCopy(val: Value): Value {
@@ -240,7 +232,7 @@ export class Evaluator {
         this.throwError(`${this.stringify(temp)} is not an array`);
       }
       const indexVal = this.evaluateExpression(index.toExpr().nodeExpressions); // not sure
-      if (indexVal.type !== VarType.INT) {
+      if (indexVal.type !== VarType.NUM || !Number.isInteger(indexVal.type)) {
         this.throwError(`Cannot access array with ${this.stringify(indexVal)}`);
       }
       if (<number>indexVal.value < 0 || <number>indexVal.value >= temp.arrayValues.length) {
@@ -268,8 +260,8 @@ export class Evaluator {
 
   private bitwiseNot(x: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
-    if (xVal.type === VarType.INT) {
-      return Evaluator.RpnVal(new Value(VarType.INT, ~(<number>xVal.value)));
+    if (xVal.type === VarType.NUM) {
+      return Evaluator.RpnVal(new Value(VarType.NUM, ~(<number>xVal.value)));
     }
     this.throwError(`Cannot perform bitwise not on ${this.stringify(xVal)}`);
     return new RpnElement(ElementType.UNKNOWN);
@@ -322,13 +314,9 @@ export class Evaluator {
       let val: Value = new Value(VarType.STR);
       val.value = this.stringify(xVal) + this.stringify(yVal);
       return Evaluator.RpnVal(val);
-    } else if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT);
+    } else if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM);
       val.value = <number>xVal.value + <number>yVal.value;
-      return Evaluator.RpnVal(val);
-    } else if (xVal.type === VarType.FLOAT || yVal.type === VarType.FLOAT) {
-      let val: Value = new Value(VarType.FLOAT);
-      val.value = this.toDouble(xVal) + this.toDouble(yVal);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform addition on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -338,20 +326,16 @@ export class Evaluator {
   private performSubtraction(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value - <number>yVal.value);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value - <number>yVal.value);
       return Evaluator.RpnVal(val);
-    } else if (xVal.type === VarType.ARR && yVal.type === VarType.INT) {
+    } else if (xVal.type === VarType.ARR && yVal.isInteger()) {
       let xValCpy: Value = Evaluator.makeCopy(xVal);
       if (<number>yVal.value < 0 || <number>yVal.value >= xValCpy.arrayValues.length) {
         this.throwError(`Cannot remove index [${yVal.value}] (out of range)`);
       }
       xValCpy.arrayValues.splice(<number>yVal.value, 1);
       return Evaluator.RpnVal(xValCpy);
-    } else if (xVal.type === VarType.FLOAT || yVal.type === VarType.FLOAT) {
-      let val: Value = new Value(VarType.FLOAT);
-      val.value = this.toDouble(xVal) - this.toDouble(yVal);
-      return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform subtraction on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
     return Evaluator.RpnVal(new Value(VarType.UNKNOWN));
@@ -360,12 +344,8 @@ export class Evaluator {
   private performMultiplication(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value * <number>yVal.value);
-      return Evaluator.RpnVal(val);
-    } else if (xVal.type === VarType.FLOAT || yVal.type === VarType.FLOAT) {
-      let val: Value = new Value(VarType.FLOAT);
-      val.value = this.toDouble(xVal) * this.toDouble(yVal);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value * <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform multiplication on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -375,20 +355,11 @@ export class Evaluator {
   private performDivision(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
       if (<number>yVal.value === 0) {
         this.throwError('Cannot divide by zero');
       }
-      let val: Value = new Value(VarType.INT, <number>xVal.value / <number>yVal.value);
-      return Evaluator.RpnVal(val);
-    } else if (xVal.type === VarType.FLOAT || yVal.type === VarType.FLOAT) {
-      let val: Value = new Value(VarType.FLOAT);
-      const f1: number = this.toDouble(xVal);
-      const f2: number = this.toDouble(xVal);
-      if (f2 === 0.0) {
-        this.throwError('Cannot divide by zero');
-      }
-      val.value = f1 / f2;
+      let val: Value = new Value(VarType.NUM, <number>xVal.value / <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform division on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -398,11 +369,11 @@ export class Evaluator {
   private performModulo(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
       if (<number>yVal.value === 0) {
         this.throwError('Cannot divide by zero');
       }
-      let val: Value = new Value(VarType.INT, <number>xVal.value % <number>yVal.value);
+      let val: Value = new Value(VarType.NUM, <number>xVal.value % <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform modulo on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -412,8 +383,8 @@ export class Evaluator {
   private bitwiseAnd(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value & <number>yVal.value);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value & <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform bitwise and on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -423,8 +394,8 @@ export class Evaluator {
   private bitwiseOr(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value | <number>yVal.value);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value | <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform bitwise or on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -434,8 +405,8 @@ export class Evaluator {
   private shiftLeft(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value << <number>yVal.value);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value << <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform shift left and on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -445,8 +416,8 @@ export class Evaluator {
   private shiftRight(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value >> <number>yVal.value);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value >> <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform bitwise shift right on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -465,8 +436,8 @@ export class Evaluator {
         this.throwError(`Cannot concatenate arrays of type ${xVal.arrayType} and ${yVal.arrayType}`);
       }
     }
-    if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
-      let val: Value = new Value(VarType.INT, <number>xVal.value ^ <number>yVal.value);
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
+      let val: Value = new Value(VarType.NUM, <number>xVal.value ^ <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
     this.throwError(`Cannot perform bitwise xor on ${this.stringify(xVal)} and ${this.stringify(yVal)}`);
@@ -582,8 +553,8 @@ export class Evaluator {
       this.throwError(`${this.stringify(array)} is not an array`);
     }
     const index: Value = this.evaluateExpression(idx.op.indexRpn);
-    if (index.type !== VarType.INT) {
-      this.throwError(`Index expected to be an int, but ${this.stringify(index)} found`);
+    if (!index.isInteger()) {
+      this.throwError(`Index expected to be an integer, but ${this.stringify(index)} found`);
     }
     if (<number>index.value < 0 || <number>index.value >= array.arrayValues.length) {
       this.throwError(`index [${index.value}] out of range`);
@@ -595,13 +566,9 @@ export class Evaluator {
   private compareEq(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.FLOAT || yVal.type === VarType.FLOAT) {
-      let val: Value = new Value(VarType.BOOL);
-      val.value = this.toDouble(xVal) === this.toDouble(yVal);
-      return Evaluator.RpnVal(val);
-    } else if ((xVal.type === VarType.INT && yVal.type === VarType.INT) ||
-               (xVal.type === VarType.STR && yVal.type === VarType.STR) ||
-               (xVal.type === VarType.BOOL && yVal.type === VarType.BOOL)) {
+    if ((xVal.type === VarType.NUM && yVal.type === VarType.NUM) ||
+        (xVal.type === VarType.STR && yVal.type === VarType.STR) ||
+        (xVal.type === VarType.BOOL && yVal.type === VarType.BOOL)) {
       let val: Value = new Value(VarType.BOOL, xVal.value === yVal.value);
       return Evaluator.RpnVal(val);
     }
@@ -618,11 +585,7 @@ export class Evaluator {
   private compareGt(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
-    if (xVal.type === VarType.FLOAT || yVal.type === VarType.FLOAT) {
-      let val: Value = new Value(VarType.BOOL);
-      val.value = this.toDouble(xVal) > this.toDouble(yVal);
-      return Evaluator.RpnVal(val);
-    } else if (xVal.type === VarType.INT && yVal.type === VarType.INT) {
+    if (xVal.type === VarType.NUM && yVal.type === VarType.NUM) {
       let val: Value = new Value(VarType.BOOL, <number>xVal.value > <number>yVal.value);
       return Evaluator.RpnVal(val);
     }
@@ -1013,10 +976,8 @@ export class Evaluator {
       return Evaluator.RpnVal(new Value(VarType.BOOL, expr.literal));
     } else if (expr.type === ExprType.STR_EXPR) {
       return Evaluator.RpnVal(new Value(VarType.STR, expr.literal));
-    } else if (expr.type === ExprType.FLOAT_EXPR) {
-      return Evaluator.RpnVal(new Value(VarType.FLOAT, expr.literal));
     } else if (expr.type === ExprType.NUM_EXPR) {
-      return Evaluator.RpnVal(new Value(VarType.INT, expr.literal));
+      return Evaluator.RpnVal(new Value(VarType.NUM, expr.literal));
     } else if (expr.type === ExprType.IDENTIFIER_EXPR) {
       let res: RpnElement = Evaluator.RpnVal(new Value(VarType.ID));
       res.value.referenceName = <string>expr.literal;
@@ -1028,7 +989,7 @@ export class Evaluator {
       return res;
     } else if (expr.type === ExprType.ARRAY) {
       let val: Value = new Value(VarType.ARR);
-      let initialSize: Value = new Value(VarType.INT);
+      let initialSize: Value = new Value(VarType.NUM);
       let elementsCount: number = 0;
       if (expr.argsList.length !== 0 && expr.argsList[0].length !== 0) {
         elementsCount = expr.argsList.length;
@@ -1036,8 +997,8 @@ export class Evaluator {
       initialSize.value = elementsCount;
       if (expr.arraySize.length > 0) {
         initialSize = this.evaluateExpression(expr.arraySize);
-        if (initialSize.type !== VarType.INT) {
-          this.throwError(`Number expected, but ${this.stringify(initialSize)} found`);
+        if (!initialSize.isInteger()) {
+          this.throwError(`Integer expected, but ${this.stringify(initialSize)} found`);
         }
         if (<number>initialSize.value < 0) {
           this.throwError('Array size cannot be negative');

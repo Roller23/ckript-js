@@ -5,18 +5,17 @@ const ast_1 = require("./ast");
 const token_1 = require("./token");
 var VarType;
 (function (VarType) {
-    VarType[VarType["INT"] = 0] = "INT";
-    VarType[VarType["FLOAT"] = 1] = "FLOAT";
-    VarType[VarType["STR"] = 2] = "STR";
-    VarType[VarType["ARR"] = 3] = "ARR";
-    VarType[VarType["OBJ"] = 4] = "OBJ";
-    VarType[VarType["BOOL"] = 5] = "BOOL";
-    VarType[VarType["FUNC"] = 6] = "FUNC";
-    VarType[VarType["REF"] = 7] = "REF";
-    VarType[VarType["ID"] = 8] = "ID";
-    VarType[VarType["VOID"] = 9] = "VOID";
-    VarType[VarType["CLASS"] = 10] = "CLASS";
-    VarType[VarType["UNKNOWN"] = 11] = "UNKNOWN";
+    VarType[VarType["NUM"] = 0] = "NUM";
+    VarType[VarType["STR"] = 1] = "STR";
+    VarType[VarType["ARR"] = 2] = "ARR";
+    VarType[VarType["OBJ"] = 3] = "OBJ";
+    VarType[VarType["BOOL"] = 4] = "BOOL";
+    VarType[VarType["FUNC"] = 5] = "FUNC";
+    VarType[VarType["REF"] = 6] = "REF";
+    VarType[VarType["ID"] = 7] = "ID";
+    VarType[VarType["VOID"] = 8] = "VOID";
+    VarType[VarType["CLASS"] = 9] = "CLASS";
+    VarType[VarType["UNKNOWN"] = 10] = "UNKNOWN";
 })(VarType = exports.VarType || (exports.VarType = {}));
 class Utils {
     static hasKey(key) {
@@ -27,9 +26,6 @@ class Utils {
     }
     static opBinary(token) {
         return Utils.hasKey(token) && !Utils.opUnary(token);
-    }
-    static isNumber(token) {
-        return token === token_1.TokenType.DECIMAL || token === token_1.TokenType.HEX || token === token_1.TokenType.BINARY;
     }
     static getPrecedence(e) {
         if (e.type === ast_1.ExprType.FUNC_CALL || e.type === ast_1.ExprType.INDEX) {
@@ -46,8 +42,7 @@ class Utils {
 }
 exports.Utils = Utils;
 Utils.varLUT = {
-    double: VarType.FLOAT,
-    int: VarType.INT,
+    num: VarType.NUM,
     str: VarType.STR,
     arr: VarType.ARR,
     obj: VarType.OBJ,

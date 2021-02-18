@@ -546,7 +546,7 @@ export class Parser {
       this.advance(); // skip the op
       this.failIfEOF(TokenType.GENERAL_EXPRESSION);
       return new Node(new Expression(ExprType.BINARY_OP, tokenType));
-    } else if (Utils.isNumber(this.currToken.type)) {
+    } else if (this.currToken.type === TokenType.NUMBER) {
       const isNegative: boolean = this.currToken.value[0] === '-';
       let arg: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
       if (isNegative) {
@@ -555,15 +555,6 @@ export class Parser {
       const numLiteral: Node = new Node(new Expression(ExprType.NUM_EXPR, arg));
       this.advance(); // skip the number
       return numLiteral;
-    } else if (this.currToken.type === TokenType.FLOAT) {
-      const isNegative: boolean = this.currToken.value[0] === '-';
-      let float: number = Number(this.currToken.value.substr(isNegative ? 1 : 0));
-      if (isNegative) {
-        float = -float;
-      }
-      const floatLiteral: Node = new Node(new Expression(ExprType.FLOAT_EXPR, float));
-      this.advance(); // skip the float
-      return floatLiteral;
     } else if (this.currToken.type === TokenType.TRUE || this.currToken.type === TokenType.FALSE) {
       const boolean: Node = new Node(new Expression(ExprType.BOOL_EXPR, this.currToken.type === TokenType.TRUE));
       this.advance(); // skip the boolean

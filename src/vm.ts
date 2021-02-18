@@ -17,13 +17,17 @@ export class Value {
   public members: FuncParam[] = [];
   public memberValues: {[key: string]: Value} = {};
   public arrayValues: Value[] = [];
-  public arrayType: string = 'int';
+  public arrayType: string = 'num';
   public className: string = '';
   public memberName: string = '';
   public referenceName: string = '';
 
   public isLvalue(): boolean {
     return this.referenceName.length !== 0;
+  }
+
+  public isInteger(): boolean {
+    return this.type === VarType.NUM && Number.isInteger(this.value);
   }
 
   constructor(type: VarType, value?: LiteralValue) {
@@ -133,8 +137,7 @@ export class CVM {
     input: new NativeInput(),
     sizeof: new NativeSizeof(),
     to_str: new NativeTostr(),
-    to_int: new NativeToint(),
-    to_double: new NativeTodouble(),
+    to_num: new NativeTonum(),
     exit: new NativeExit(),
     timestamp: new NativeTimestamp(),
     pow: new NativePow(),
@@ -144,7 +147,6 @@ export class CVM {
     file_remove: new NativeFileremove(),
     abs: new NativeAbs(),
     rand: new NativeRand(),
-    randf: new NativeRandf(),
     contains: new NativeContains(),
     split: new NativeSplit(),
     substr: new NativeSubstr(),
@@ -263,9 +265,7 @@ export class CVM {
     }
     if (val.type === VarType.STR) {
       return <string>val.value;
-    } else if (val.type === VarType.INT) {
-      return val.value!.toString();
-    } else if (val.type === VarType.FLOAT) {
+    } else if (val.type === VarType.NUM) {
       return val.value!.toString();
     } else if (val.type === VarType.FUNC) {
       return 'function';
@@ -361,13 +361,13 @@ class NativeSizeof implements NativeFunction {
     }
     const arg: Value = args[0];
     if (arg.type === VarType.ARR) {
-      return new Value(VarType.INT, arg.arrayValues.length);
+      return new Value(VarType.NUM, arg.arrayValues.length);
     } else if (arg.type === VarType.STR) {
-      return new Value(VarType.INT, (<string>arg.value).length);
+      return new Value(VarType.NUM, (<string>arg.value).length);
     } else {
       ev.throwError(`Cannot get the size of ${ev.VM.stringify(arg)}`);
     }
-    return new Value(VarType.INT, 0);
+    return new Value(VarType.NUM, 0);
   }
 }
 
@@ -380,58 +380,32 @@ class NativeTostr implements NativeFunction {
   }
 }
 
-class NativeToint implements NativeFunction {
+class NativeTonum implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1) {
-      ev.throwError(`to_int expects one argument (int|float|str|bool)`);
+      ev.throwError(`to_int expects one argument (num|str|bool)`);
     }
     const arg: Value = args[0];
-    if (arg.type === VarType.INT) {
+    if (arg.type === VarType.NUM) {
       return arg;
-    } else if (arg.type === VarType.FLOAT) {
-      return new Value(VarType.INT, Math.floor(<number>arg.value));
     } else if (arg.type === VarType.STR) {
       const converted: number = Number(arg.value);
       if (!Number.isInteger(converted)) {
-        ev.throwError(`'${arg.value}' cannot be converted to int`);
+        ev.throwError(`'${arg.value}' cannot be converted to num`);
       }
-      return new Value(VarType.INT, converted);
+      return new Value(VarType.NUM, converted);
     } else if (arg.type === VarType.BOOL) {
-      return new Value(VarType.INT, Number(arg.value));
+      return new Value(VarType.NUM, Number(arg.value));
     }
-    ev.throwError(`${ev.VM.stringify(arg)} cannot be converted to int`);
-    return new Value(VarType.INT, 0);
-  }
-}
-
-class NativeTodouble implements NativeFunction {
-  public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1) {
-      ev.throwError(`to_double expects one argument (int|float|str|bool)`);
-    }
-    const arg: Value = args[0];
-    if (arg.type === VarType.INT) {
-      return new Value(VarType.FLOAT, arg.value);
-    } else if (arg.type === VarType.FLOAT) {
-      return arg;
-    } else if (arg.type === VarType.STR) {
-      const converted: number = Number(arg.value);
-      if (isNaN(converted)) {
-        ev.throwError(`'${arg.value}' cannot be converted to double`);
-      }
-      return new Value(VarType.FLOAT, converted);
-    } else if (arg.type === VarType.BOOL) {
-      return new Value(VarType.FLOAT, Number(arg.value));
-    }
-    ev.throwError(`${ev.VM.stringify(arg)} cannot be converted to double`);
-    return new Value(VarType.FLOAT, 0.0);
+    ev.throwError(`${ev.VM.stringify(arg)} cannot be converted to num`);
+    return new Value(VarType.NUM, 0);
   }
 }
 
 class NativeExit implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT) {
-      ev.throwError(`exit expects one argument (int)`);
+    if (args.length !== 1 || !args[0].isInteger()) {
+      ev.throwError(`exit expects one argument (integer)`);
     }
     process.exit(<number>args[0].value);
   }
@@ -442,22 +416,18 @@ class NativeTimestamp implements NativeFunction {
     if (args.length !== 0) {
       ev.throwError(`timestamp expects no arguments`);
     }
-    return new Value(VarType.INT, Date.now());
+    return new Value(VarType.NUM, Date.now());
   }
 }
 
 class NativePow implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 2) {
-      ev.throwError(`pow expects two arguments (int|double, int|double)`);
-    }
-    if (!(args[0].type === VarType.FLOAT || args[0].type === VarType.INT)
-     || !(args[1].type === VarType.FLOAT || args[1].type === VarType.INT)) {
-        ev.throwError("pow() arguments must be either int or double");
+    if (args.length !== 2 || args[0].type !== VarType.NUM || args[1].type !== VarType.NUM) {
+      ev.throwError(`pow expects two arguments (num, num)`);
     }
     const arg1: number = <number>args[0].value;
     const arg2: number = <number>args[1].value;
-    return new Value(VarType.FLOAT, Math.pow(arg1, arg2));
+    return new Value(VarType.NUM, Math.pow(arg1, arg2));
   }
 }
 
@@ -515,34 +485,22 @@ class NativeFileremove implements NativeFunction {
 
 class NativeAbs implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError(`abs expects one argument (int|double)`);
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError(`abs expects one argument (num)`);
     }
-    return new Value(args[0].type, Math.abs(<number>args[0].value));
+    return new Value(VarType.NUM, Math.abs(<number>args[0].value));
   }
 }
 
 class NativeRand implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 2 || args[0].type !== VarType.INT || args[1].type !== VarType.INT) {
-      ev.throwError(`rand expects two arguments (int, int)`);
-    }
-    const min: number = Math.ceil(<number>args[0].value);
-    const max: number = Math.floor(<number>args[1].value);
-    const rnd: number = Math.floor(Math.random() * (max - min + 1)) + min;
-    return new Value(VarType.INT, rnd);
-  }
-}
-
-class NativeRandf implements NativeFunction {
-  public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 2 || args[0].type !== VarType.FLOAT || args[1].type !== VarType.FLOAT) {
-      ev.throwError(`randf expects two arguments (double, double)`);
+    if (args.length !== 2 || args[0].type !== VarType.NUM || args[1].type !== VarType.NUM) {
+      ev.throwError(`rand expects two arguments (num, num)`);
     }
     const min: number = <number>args[0].value;
     const max: number = <number>args[1].value;
     const rnd: number = Math.random() * (min - max) + max;
-    return new Value(VarType.FLOAT, rnd);
+    return new Value(VarType.NUM, rnd);
   }
 }
 
@@ -558,8 +516,8 @@ class NativeContains implements NativeFunction {
 
 class NativeSubstr implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 3 || args[0].type !== VarType.STR || args[1].type !== VarType.INT || args[2].type !== VarType.INT) {
-      ev.throwError(`substr expects two arguments (str, int, int)`);
+    if (args.length !== 3 || args[0].type !== VarType.STR || !args[1].isInteger() || !args[2].isInteger()) {
+      ev.throwError(`substr expects two arguments (str, integer, integer)`);
     }
     const str = (<string>args[0].value).substr(<number>args[1].value, <number>args[2].value);
     return new Value(VarType.STR, str);
@@ -587,10 +545,10 @@ class NativeTobytes implements NativeFunction {
       ev.throwError(`to_bytes expects one argument (str)`);
     }
     let res: Value = new Value(VarType.ARR);
-    res.arrayType = 'int';
+    res.arrayType = 'num';
     const buffer: number[] = [...Buffer.from(<string>args[0].value)];
     for (const byte of buffer) {
-      res.arrayValues.push(new Value(VarType.INT, byte));
+      res.arrayValues.push(new Value(VarType.NUM, byte));
     }
     return res;
   }
@@ -598,11 +556,14 @@ class NativeTobytes implements NativeFunction {
 
 class NativeFrombytes implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.ARR || args[0].arrayType !== 'int') {
-      ev.throwError(`from_bytes expects one argument (arr<int>)`);
+    if (args.length !== 1 || args[0].type !== VarType.ARR || args[0].arrayType !== 'num') {
+      ev.throwError(`from_bytes expects one argument (arr<num>)`);
     }
     let bytes: number[] = [];
     for (const el of args[0].arrayValues) {
+      if (!el.isInteger()) {
+        ev.throwError(`from_bytes expects an array of integers`);
+      }
       bytes.push(<number>el.value);
     }
     return new Value(VarType.STR, String.fromCharCode(...bytes));
@@ -702,8 +663,8 @@ class NativeHttp implements NativeFunction {
 
 class NativeSleep implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT) {
-      ev.throwError('sleep expects one argument (int)');
+    if (args.length !== 1 || !args[0].isInteger()) {
+      ev.throwError('sleep expects one argument (integer)');
     }
     if (args[0].value! < 0) {
       ev.throwError(`Sleep time must be greater than -1`);
@@ -716,117 +677,117 @@ class NativeSleep implements NativeFunction {
 
 class NativeSin implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('sin expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('sin expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.sin(<number>args[0].value));
+    return new Value(VarType.NUM, Math.sin(<number>args[0].value));
   }
 }
 
 class NativeSinh implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('sinh expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('sinh expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.sinh(<number>args[0].value));
+    return new Value(VarType.NUM, Math.sinh(<number>args[0].value));
   }
 }
 
 class NativeCos implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('cos expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('cos expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.cos(<number>args[0].value));
+    return new Value(VarType.NUM, Math.cos(<number>args[0].value));
   }
 }
 
 class NativeCosh implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('cosh expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('cosh expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.cosh(<number>args[0].value));
+    return new Value(VarType.NUM, Math.cosh(<number>args[0].value));
   }
 }
 
 class NativeTan implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('tan expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('tan expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.tan(<number>args[0].value));
+    return new Value(VarType.NUM, Math.tan(<number>args[0].value));
   }
 }
 
 class NativeTanh implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('tanh expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('tanh expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.tanh(<number>args[0].value));
+    return new Value(VarType.NUM, Math.tanh(<number>args[0].value));
   }
 }
 
 class NativeSqrt implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('sqrt expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('sqrt expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.sqrt(<number>args[0].value));
+    return new Value(VarType.NUM, Math.sqrt(<number>args[0].value));
   }
 }
 
 class NativeLog implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('log expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('log expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.log(<number>args[0].value));
+    return new Value(VarType.NUM, Math.log(<number>args[0].value));
   }
 }
 
 class NativeLog10 implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('log10 expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('log10 expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.log10(<number>args[0].value));
+    return new Value(VarType.NUM, Math.log10(<number>args[0].value));
   }
 }
 
 class NativeExp implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('exp expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('exp expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.exp(<number>args[0].value));
+    return new Value(VarType.NUM, Math.exp(<number>args[0].value));
   }
 }
 
 class NativeFloor implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('floor expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('floor expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.floor(<number>args[0].value));
+    return new Value(VarType.NUM, Math.floor(<number>args[0].value));
   }
 }
 
 class NativeCeil implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('ceil expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('ceil expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.ceil(<number>args[0].value));
+    return new Value(VarType.NUM, Math.ceil(<number>args[0].value));
   }
 }
 
 class NativeRound implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
-    if (args.length !== 1 || args[0].type !== VarType.INT && args[0].type !== VarType.FLOAT) {
-      ev.throwError('round expects one argument (double|int)');
+    if (args.length !== 1 || args[0].type !== VarType.NUM) {
+      ev.throwError('round expects one argument (num)');
     }
-    return new Value(VarType.FLOAT, Math.round(<number>args[0].value));
+    return new Value(VarType.NUM, Math.round(<number>args[0].value));
   }
 }
