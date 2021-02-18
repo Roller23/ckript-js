@@ -649,12 +649,11 @@ class Evaluator {
             delete this.stack[decl.id];
         }
         if (decl.isAllocated) {
-            const chunk = this.VM.heap.allocate();
+            const chunkRef = this.VM.heap.allocate(varVal).heapRef;
             let _var = (this.stack[decl.id] = new vm_1.Variable());
-            _var.val.heapRef = chunk.heapRef;
+            _var.val.heapRef = chunkRef;
             _var.type = decl.varType;
             _var.constant = decl.isConstant;
-            chunk.data = varVal;
             if (varVal.type === utils_1.VarType.OBJ) {
                 this.VM.globals.bind.execute([_var.val], this);
             }

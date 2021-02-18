@@ -2,7 +2,7 @@ import { ClassStatement, Declaration, Expression, ExprType, FuncExpression, Func
 import { ErrorHandler } from "./error-handler";
 import { Token, TokenType } from "./token";
 import { Utils, VarType } from "./utils";
-import { Chunk, CVM, Value, Variable } from "./vm";
+import { CVM, Value, Variable } from "./vm";
 
 enum OperatorType {
   BASIC, FUNC, INDEX, UNKNOWN
@@ -672,12 +672,11 @@ export class Evaluator {
       delete this.stack[decl.id];
     }
     if (decl.isAllocated) {
-      const chunk: Chunk = this.VM.heap.allocate();
+      const chunkRef: number = this.VM.heap.allocate(varVal).heapRef;
       let _var: VariablePtr = (this.stack[decl.id] = new Variable());
-      _var.val.heapRef = chunk.heapRef;
+      _var.val.heapRef = chunkRef;
       _var.type = decl.varType;
       _var.constant = decl.isConstant;
-      chunk.data = varVal;
       if (varVal.type === VarType.OBJ) {
         this.VM.globals.bind.execute([_var.val], this);
       }

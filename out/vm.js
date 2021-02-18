@@ -69,17 +69,18 @@ class Heap {
         this.chunks = [];
         this.cache = new Cache();
     }
-    allocate() {
+    allocate(value) {
         const index = this.cache.pop();
         if (index !== -1) {
             let chunk = this.chunks[index];
+            chunk.data = value;
             chunk.used = true;
             return chunk;
         }
         let newChunk = new Chunk();
         this.chunks.push(newChunk);
         newChunk.used = true;
-        newChunk.data = new Value(utils_1.VarType.UNKNOWN);
+        newChunk.data = value;
         newChunk.heapRef = this.chunks.length - 1;
         return newChunk;
     }

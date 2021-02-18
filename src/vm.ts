@@ -70,17 +70,18 @@ export class Heap {
   public chunks: Chunk[] = [];
   public cache: Cache = new Cache();
 
-  public allocate(): Chunk {
+  public allocate(value: Value): Chunk {
     const index: number = this.cache.pop();
     if (index !== -1) {
       let chunk: Chunk = this.chunks[index];
+      chunk.data = value;
       chunk.used = true;
       return chunk;
     }
     let newChunk: Chunk = new Chunk();
     this.chunks.push(newChunk);
     newChunk.used = true;
-    newChunk.data = new Value(VarType.UNKNOWN);
+    newChunk.data = value;
     newChunk.heapRef = this.chunks.length - 1;
     return newChunk;
   }
