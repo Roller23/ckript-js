@@ -288,7 +288,7 @@ class Evaluator {
         if (!this.VM.heap.chunks[val.heapRef].used) {
             this.throwError('Double delete');
         }
-        this.VM.heap.free(val.heapRef);
+        this.VM.free(val.heapRef);
         if (v !== null) {
             v.val.heapRef = -1;
         }
@@ -299,6 +299,7 @@ class Evaluator {
         const yVal = this.getValue(y);
         if (xVal.type === utils_1.VarType.ARR) {
             if (yVal.type === utils_1.Utils.varLUT[xVal.arrayType]) {
+                // TODO: fix arrays with refs
                 let xValCpy = Evaluator.makeCopy(xVal);
                 xValCpy.arrayValues.push(Evaluator.makeCopy(yVal));
                 return Evaluator.RpnVal(xValCpy);
@@ -649,7 +650,7 @@ class Evaluator {
             delete this.stack[decl.id];
         }
         if (decl.isAllocated) {
-            const chunkRef = this.VM.heap.allocate(varVal).heapRef;
+            const chunkRef = this.VM.allocate(varVal).heapRef;
             let _var = (this.stack[decl.id] = new vm_1.Variable());
             _var.val.heapRef = chunkRef;
             _var.type = decl.varType;
@@ -657,6 +658,7 @@ class Evaluator {
             if (varVal.type === utils_1.VarType.OBJ) {
                 this.VM.globals.bind.execute([_var.val], this);
             }
+            this.VM.checkChunks();
             return;
         }
         let _var = (this.stack[decl.id] = new vm_1.Variable());
@@ -815,7 +817,9 @@ class Evaluator {
         }
         const fnName = fn.value.isLvalue() ? fn.value.referenceName : fnValue.funcName;
         this.VM.trace.push(fnName, this.currentLine, this.currentSource);
+        this.VM.activeEvaluators.push(funcEvaluator);
         funcEvaluator.start();
+        this.VM.activeEvaluators.pop();
         if (fnValue.func.retRef) {
             if (funcEvaluator.returnValue.heapRef === -1) {
                 this.throwError(`function returns a reference, but ${this.stringify(funcEvaluator.returnValue)} was returned`);

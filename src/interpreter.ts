@@ -21,6 +21,8 @@ export class Interpreter {
     for (let i = 0; i < args.length; i++) {
       val.arrayValues.push(new Value(VarType.STR, args[i]));
     }
+    evaluator.VM.activeEvaluators.push(evaluator);
     evaluator.start();
+    evaluator.VM.activeEvaluators.pop();
   }
 }

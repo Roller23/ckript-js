@@ -47,7 +47,7 @@ class RpnElement {
 
 type RpnStack = RpnElement[];
 type VariablePtr = Variable | null;
-type CallStack = {[key: string]: VariablePtr};
+type CallStack = {[key: string]: Variable};
 
 export class Evaluator {
   public static FLAG_OK: number = 0;
@@ -291,7 +291,7 @@ export class Evaluator {
     if (!this.VM.heap.chunks[val.heapRef].used) {
       this.throwError('Double delete');
     }
-    this.VM.heap.free(val.heapRef);
+    this.VM.free(val.heapRef);
     if (v !== null) {
       v.val.heapRef = -1;
     }
@@ -303,6 +303,7 @@ export class Evaluator {
     const yVal: Value = this.getValue(y);
     if (xVal.type === VarType.ARR) {
       if (yVal.type === Utils.varLUT[xVal.arrayType]) {
+        // TODO: fix arrays with refs
         let xValCpy: Value = Evaluator.makeCopy(xVal);
         xValCpy.arrayValues.push(Evaluator.makeCopy(yVal));
         return Evaluator.RpnVal(xValCpy);
@@ -672,7 +673,7 @@ export class Evaluator {
       delete this.stack[decl.id];
     }
     if (decl.isAllocated) {
-      const chunkRef: number = this.VM.heap.allocate(varVal).heapRef;
+      const chunkRef: number = this.VM.allocate(varVal).heapRef;
       let _var: VariablePtr = (this.stack[decl.id] = new Variable());
       _var.val.heapRef = chunkRef;
       _var.type = decl.varType;
@@ -680,6 +681,7 @@ export class Evaluator {
       if (varVal.type === VarType.OBJ) {
         this.VM.globals.bind.execute([_var.val], this);
       }
+      this.VM.checkChunks();
       return;
     }
     let _var: VariablePtr = (this.stack[decl.id] = new Variable());
@@ -833,7 +835,9 @@ export class Evaluator {
     }
     const fnName: string = fn.value.isLvalue() ? fn.value.referenceName : fnValue.funcName;
     this.VM.trace.push(fnName, this.currentLine, this.currentSource);
+    this.VM.activeEvaluators.push(funcEvaluator);
     funcEvaluator.start();
+    this.VM.activeEvaluators.pop();
     if (fnValue.func!.retRef) {
       if (funcEvaluator.returnValue!.heapRef === -1) {
         this.throwError(`function returns a reference, but ${this.stringify(funcEvaluator.returnValue!)} was returned`);

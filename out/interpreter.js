@@ -22,7 +22,9 @@ class Interpreter {
         for (let i = 0; i < args.length; i++) {
             val.arrayValues.push(new vm_1.Value(utils_1.VarType.STR, args[i]));
         }
+        evaluator.VM.activeEvaluators.push(evaluator);
         evaluator.start();
+        evaluator.VM.activeEvaluators.pop();
     }
 }
 exports.Interpreter = Interpreter;

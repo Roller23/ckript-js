@@ -48,6 +48,7 @@ export class Chunk {
   public data: Value;
   public heapRef: number = -1;
   public used: boolean = false;
+  public marked: boolean = false;
 
   constructor (value: Value) {
     this.data = value;
@@ -125,6 +126,7 @@ interface NativeFunction {
 export class CVM {
   public heap: Heap = new Heap();
   public trace: StackTrace = new StackTrace();
+  public activeEvaluators: Evaluator[] = [];
   public globals: {[key: string]: NativeFunction} = {
     print: new NativePrint(),
     println: new NativePrintln(),
@@ -168,6 +170,91 @@ export class CVM {
     round: new NativeRound(),
     http: new NativeHttp()
   };
+
+  private allocatedChunks: number = 0;
+  private chunksLimit: number = 5;
+
+  public allocate(value: Value): Chunk {
+    const chunk: Chunk = this.heap.allocate(value);
+    this.allocatedChunks++;
+    return chunk;
+  }
+
+  public free(ref: number): void {
+    // TODO: get rid of this
+    return this.heap.free(ref);
+  }
+
+  private markChunk(chunk: Chunk): void {
+    if (chunk.marked) return;
+    chunk.marked = true;
+    if (chunk.data.type === VarType.ARR) {
+      chunk.data.arrayValues.forEach((arrVal: Value) => {
+        if (arrVal.heapRef !== -1) {
+          this.markChunk(this.heap.chunks[arrVal.heapRef]);
+        }
+      });
+    } else if (chunk.data.type === VarType.OBJ) {
+      Object.values(chunk.data.memberValues).forEach((objVal: Value) => {
+        if (objVal.heapRef !== -1) {
+          this.markChunk(this.heap.chunks[objVal.heapRef]);
+        }
+      });
+    }
+  }
+
+  private markAll(): void {
+    for (const ev of this.activeEvaluators) {
+      for (const _var of Object.values(ev.stack)) {
+        if (_var.isAllocated()) {
+          this.markChunk(this.heap.chunks[_var.val.heapRef]);
+        } else if (_var.val.type === VarType.ARR) {
+          _var.val.arrayValues.forEach((arrVal: Value) => {
+            if (arrVal.heapRef !== -1) {
+              this.markChunk(this.heap.chunks[arrVal.heapRef]);
+            }
+          });
+        } else if (_var.val.type === VarType.OBJ) {
+          Object.values(_var.val.memberValues).forEach((objVal: Value) => {
+            if (objVal.heapRef !== -1) {
+              this.markChunk(this.heap.chunks[objVal.heapRef]);
+            }
+          });
+        }
+      }
+    }
+  }
+
+  private sweep(): number {
+    let foundChuns: number = 0;
+    let swept: number = 0;
+    for (const chunk of this.heap.chunks) {
+      if (!chunk.used) continue;
+      foundChuns++;
+      if (!chunk.marked) {
+        swept++;
+        this.heap.free(chunk.heapRef);
+      } else {
+        chunk.marked = false;
+      }
+    }
+    console.log('GC found', foundChuns, 'and swept', swept);
+    return swept;
+  }
+
+  private runGC(): number {
+    this.markAll();
+    return this.sweep();
+  }
+
+  public checkChunks(): void {
+    if (this.allocatedChunks >= this.chunksLimit) {
+      const freedChunks: number = this.runGC();
+      this.allocatedChunks -= freedChunks;
+      this.chunksLimit = this.allocatedChunks * 2;
+    }
+  }
+
   public stringify(val: Value): string {
     if (val.heapRef !== -1) {
       if (val.heapRef >= this.heap.chunks.length) return 'null';
