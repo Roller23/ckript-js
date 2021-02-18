@@ -44,12 +44,14 @@ export class Variable {
   }
 }
 
-type ValuePtr = Value | null;
-
 export class Chunk {
-  public data: ValuePtr = null;
+  public data: Value;
   public heapRef: number = -1;
   public used: boolean = false;
+
+  constructor (value: Value) {
+    this.data = value;
+  }
 }
 
 export class Cache {
@@ -78,10 +80,9 @@ export class Heap {
       chunk.used = true;
       return chunk;
     }
-    let newChunk: Chunk = new Chunk();
+    let newChunk: Chunk = new Chunk(value);
     this.chunks.push(newChunk);
     newChunk.used = true;
-    newChunk.data = value;
     newChunk.heapRef = this.chunks.length - 1;
     return newChunk;
   }
@@ -170,12 +171,8 @@ export class CVM {
   public stringify(val: Value): string {
     if (val.heapRef !== -1) {
       if (val.heapRef >= this.heap.chunks.length) return 'null';
-      let ptr: ValuePtr = this.heap.chunks[val.heapRef].data;
-      if (ptr === null) {
-        return 'null';
-      } else {
-        return `ref to ${this.stringify(ptr)}`;
-      }
+      let ptr: Value = this.heap.chunks[val.heapRef].data;
+      return `ref to ${this.stringify(ptr)}`;
     }
     if (val.type === VarType.STR) {
       return <string>val.value;
@@ -534,15 +531,12 @@ class NativeBind implements NativeFunction {
     if (ref < 0 || ref >= ev.VM.heap.chunks.length) {
       ev.throwError('Dereferencing a value that is not on the heap');
     }
-    const ptr: ValuePtr = ev.VM.heap.chunks[ref].data;
-    if (ptr === null) {
-      ev.throwError(`Dereferencing a null pointer`);
-    }
-    if (ptr!.type !== VarType.OBJ) {
+    const val: Value = ev.VM.heap.chunks[ref].data;
+    if (val.type !== VarType.OBJ) {
       ev.throwError(`Only a reference to object can be bound`);
     }
-    Object.keys(ptr!.memberValues).forEach((key: string) => {
-      let v: ValuePtr = ptr!.memberValues[key];
+    Object.keys(val.memberValues).forEach((key: string) => {
+      let v: Value = val.memberValues[key];
       if (v.heapRef !== -1) {
         v = ev.VM.heap.chunks[v.heapRef].data;
       }

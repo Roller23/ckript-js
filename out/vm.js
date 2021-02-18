@@ -43,10 +43,10 @@ class Variable {
 }
 exports.Variable = Variable;
 class Chunk {
-    constructor() {
-        this.data = null;
+    constructor(value) {
         this.heapRef = -1;
         this.used = false;
+        this.data = value;
     }
 }
 exports.Chunk = Chunk;
@@ -77,10 +77,9 @@ class Heap {
             chunk.used = true;
             return chunk;
         }
-        let newChunk = new Chunk();
+        let newChunk = new Chunk(value);
         this.chunks.push(newChunk);
         newChunk.used = true;
-        newChunk.data = value;
         newChunk.heapRef = this.chunks.length - 1;
         return newChunk;
     }
@@ -164,12 +163,7 @@ class CVM {
             if (val.heapRef >= this.heap.chunks.length)
                 return 'null';
             let ptr = this.heap.chunks[val.heapRef].data;
-            if (ptr === null) {
-                return 'null';
-            }
-            else {
-                return `ref to ${this.stringify(ptr)}`;
-            }
+            return `ref to ${this.stringify(ptr)}`;
         }
         if (val.type === utils_1.VarType.STR) {
             return val.value;
@@ -529,15 +523,12 @@ class NativeBind {
         if (ref < 0 || ref >= ev.VM.heap.chunks.length) {
             ev.throwError('Dereferencing a value that is not on the heap');
         }
-        const ptr = ev.VM.heap.chunks[ref].data;
-        if (ptr === null) {
-            ev.throwError(`Dereferencing a null pointer`);
-        }
-        if (ptr.type !== utils_1.VarType.OBJ) {
+        const val = ev.VM.heap.chunks[ref].data;
+        if (val.type !== utils_1.VarType.OBJ) {
             ev.throwError(`Only a reference to object can be bound`);
         }
-        Object.keys(ptr.memberValues).forEach((key) => {
-            let v = ptr.memberValues[key];
+        Object.keys(val.memberValues).forEach((key) => {
+            let v = val.memberValues[key];
             if (v.heapRef !== -1) {
                 v = ev.VM.heap.chunks[v.heapRef].data;
             }
