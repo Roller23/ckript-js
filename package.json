@@ -2,5 +2,8 @@
   "dependencies": {
     "readline-sync": "^1.4.10",
     "sync-fetch": "^0.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^15.6.1"
   }
 }
