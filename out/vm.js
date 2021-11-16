@@ -257,7 +257,22 @@ class CVM {
             return val.value.toString();
         }
         else if (val.type === utils_1.VarType.FUNC) {
-            return 'function';
+            let str = 'function(';
+            val.func.params.forEach((param, i) => {
+                str += param.typeName;
+                if (i !== val.func.params.length - 1) {
+                    str += ', ';
+                }
+            });
+            if (val.func.params.length === 0) {
+                str += 'void';
+            }
+            str += ') ';
+            if (val.func.retRef) {
+                str += 'ref ';
+            }
+            str += val.func.retType;
+            return str;
         }
         else if (val.type === utils_1.VarType.BOOL) {
             return val.value ? 'true' : 'false';

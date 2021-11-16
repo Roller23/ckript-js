@@ -268,7 +268,22 @@ export class CVM {
     } else if (val.type === VarType.NUM) {
       return val.value!.toString();
     } else if (val.type === VarType.FUNC) {
-      return 'function';
+      let str: string = 'function(';
+      val.func!.params.forEach((param: FuncParam, i: number) => {
+        str += param.typeName;
+        if (i !== val.func!.params.length - 1) {
+          str += ', ';
+        }
+      });
+      if (val.func!.params.length === 0) {
+        str += 'void';
+      }
+      str += ') ';
+      if (val.func!.retRef) {
+        str += 'ref '
+      }
+      str += val.func!.retType;
+      return str;
     } else if (val.type === VarType.BOOL) {
       return val.value as boolean ? 'true' : 'false';
     } else if (val.type === VarType.CLASS) {
