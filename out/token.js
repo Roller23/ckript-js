@@ -37,39 +37,38 @@ var TokenType;
     TokenType[TokenType["FOR"] = 136] = "FOR";
     TokenType[TokenType["WHILE"] = 137] = "WHILE";
     TokenType[TokenType["ALLOC"] = 138] = "ALLOC";
-    TokenType[TokenType["DEL"] = 139] = "DEL";
-    TokenType[TokenType["TYPE"] = 140] = "TYPE";
-    TokenType[TokenType["REF"] = 141] = "REF";
-    TokenType[TokenType["CONST"] = 142] = "CONST";
-    TokenType[TokenType["STRING_LITERAL"] = 143] = "STRING_LITERAL";
-    TokenType[TokenType["NUMBER"] = 144] = "NUMBER";
-    TokenType[TokenType["ARRAY"] = 145] = "ARRAY";
-    TokenType[TokenType["CLASS"] = 146] = "CLASS";
-    TokenType[TokenType["PLUS_ASSIGN"] = 147] = "PLUS_ASSIGN";
-    TokenType[TokenType["MINUS_ASSIGN"] = 148] = "MINUS_ASSIGN";
-    TokenType[TokenType["MUL_ASSIGN"] = 149] = "MUL_ASSIGN";
-    TokenType[TokenType["DIV_ASSIGN"] = 150] = "DIV_ASSIGN";
-    TokenType[TokenType["MOD_ASSIGN"] = 151] = "MOD_ASSIGN";
-    TokenType[TokenType["LSHIFT_ASSIGN"] = 152] = "LSHIFT_ASSIGN";
-    TokenType[TokenType["RSHIFT_ASSIGN"] = 153] = "RSHIFT_ASSIGN";
-    TokenType[TokenType["AND_ASSIGN"] = 154] = "AND_ASSIGN";
-    TokenType[TokenType["OR_ASSIGN"] = 155] = "OR_ASSIGN";
-    TokenType[TokenType["XOR_ASSIGN"] = 156] = "XOR_ASSIGN";
-    TokenType[TokenType["LSHIFT"] = 157] = "LSHIFT";
-    TokenType[TokenType["RSHIFT"] = 158] = "RSHIFT";
-    TokenType[TokenType["OP_AND"] = 159] = "OP_AND";
-    TokenType[TokenType["OP_OR"] = 160] = "OP_OR";
-    TokenType[TokenType["OP_EQ"] = 161] = "OP_EQ";
-    TokenType[TokenType["OP_NOT_EQ"] = 162] = "OP_NOT_EQ";
-    TokenType[TokenType["OP_GT_EQ"] = 163] = "OP_GT_EQ";
-    TokenType[TokenType["OP_LT_EQ"] = 164] = "OP_LT_EQ";
-    TokenType[TokenType["IDENTIFIER"] = 165] = "IDENTIFIER";
-    TokenType[TokenType["FALSE"] = 166] = "FALSE";
-    TokenType[TokenType["TRUE"] = 167] = "TRUE";
-    TokenType[TokenType["UNKNOWN"] = 168] = "UNKNOWN";
-    TokenType[TokenType["NONE"] = 169] = "NONE";
-    TokenType[TokenType["GENERAL_EXPRESSION"] = 170] = "GENERAL_EXPRESSION";
-    TokenType[TokenType["GENERAL_STATEMENT"] = 171] = "GENERAL_STATEMENT";
+    TokenType[TokenType["TYPE"] = 139] = "TYPE";
+    TokenType[TokenType["REF"] = 140] = "REF";
+    TokenType[TokenType["CONST"] = 141] = "CONST";
+    TokenType[TokenType["STRING_LITERAL"] = 142] = "STRING_LITERAL";
+    TokenType[TokenType["NUMBER"] = 143] = "NUMBER";
+    TokenType[TokenType["ARRAY"] = 144] = "ARRAY";
+    TokenType[TokenType["CLASS"] = 145] = "CLASS";
+    TokenType[TokenType["PLUS_ASSIGN"] = 146] = "PLUS_ASSIGN";
+    TokenType[TokenType["MINUS_ASSIGN"] = 147] = "MINUS_ASSIGN";
+    TokenType[TokenType["MUL_ASSIGN"] = 148] = "MUL_ASSIGN";
+    TokenType[TokenType["DIV_ASSIGN"] = 149] = "DIV_ASSIGN";
+    TokenType[TokenType["MOD_ASSIGN"] = 150] = "MOD_ASSIGN";
+    TokenType[TokenType["LSHIFT_ASSIGN"] = 151] = "LSHIFT_ASSIGN";
+    TokenType[TokenType["RSHIFT_ASSIGN"] = 152] = "RSHIFT_ASSIGN";
+    TokenType[TokenType["AND_ASSIGN"] = 153] = "AND_ASSIGN";
+    TokenType[TokenType["OR_ASSIGN"] = 154] = "OR_ASSIGN";
+    TokenType[TokenType["XOR_ASSIGN"] = 155] = "XOR_ASSIGN";
+    TokenType[TokenType["LSHIFT"] = 156] = "LSHIFT";
+    TokenType[TokenType["RSHIFT"] = 157] = "RSHIFT";
+    TokenType[TokenType["OP_AND"] = 158] = "OP_AND";
+    TokenType[TokenType["OP_OR"] = 159] = "OP_OR";
+    TokenType[TokenType["OP_EQ"] = 160] = "OP_EQ";
+    TokenType[TokenType["OP_NOT_EQ"] = 161] = "OP_NOT_EQ";
+    TokenType[TokenType["OP_GT_EQ"] = 162] = "OP_GT_EQ";
+    TokenType[TokenType["OP_LT_EQ"] = 163] = "OP_LT_EQ";
+    TokenType[TokenType["IDENTIFIER"] = 164] = "IDENTIFIER";
+    TokenType[TokenType["FALSE"] = 165] = "FALSE";
+    TokenType[TokenType["TRUE"] = 166] = "TRUE";
+    TokenType[TokenType["UNKNOWN"] = 167] = "UNKNOWN";
+    TokenType[TokenType["NONE"] = 168] = "NONE";
+    TokenType[TokenType["GENERAL_EXPRESSION"] = 169] = "GENERAL_EXPRESSION";
+    TokenType[TokenType["GENERAL_STATEMENT"] = 170] = "GENERAL_STATEMENT";
 })(TokenType = exports.TokenType || (exports.TokenType = {}));
 ;
 class Token {
@@ -116,7 +115,6 @@ Token.nameLUT = {
     [TokenType.BREAK]: 'break',
     [TokenType.CONTINUE]: 'continue',
     [TokenType.ALLOC]: 'alloc',
-    [TokenType.DEL]: 'del',
     [TokenType.TYPE]: 'type',
     [TokenType.REF]: 'ref',
     [TokenType.CONST]: 'const',

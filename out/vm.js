@@ -215,12 +215,10 @@ class CVM {
         }
     }
     sweep() {
-        let foundChuns = 0;
         let swept = 0;
         for (const chunk of this.heap.chunks) {
             if (!chunk.used)
                 continue;
-            foundChuns++;
             if (!chunk.marked) {
                 swept++;
                 this.heap.free(chunk.heapRef);
@@ -229,7 +227,6 @@ class CVM {
                 chunk.marked = false;
             }
         }
-        console.log('GC found', foundChuns, 'and swept', swept);
         return swept;
     }
     runGC() {

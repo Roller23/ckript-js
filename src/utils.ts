@@ -57,7 +57,7 @@ export class Utils {
   }
 
   public static opUnary(token: TokenType): boolean {
-    return token === TokenType.OP_NOT || token === TokenType.OP_NEG || token === TokenType.DEL;
+    return token === TokenType.OP_NOT || token === TokenType.OP_NEG;
   }
 
   public static opBinary(token: TokenType): boolean {

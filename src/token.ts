@@ -11,7 +11,7 @@ export enum TokenType {
   RIGHT_PAREN = ')'.charCodeAt(0), SET = '$'.charCodeAt(0), SET_IDX = '#'.charCodeAt(0),
 
   FUNCTION = 130, RETURN, IF, ELSE, BREAK, CONTINUE,
-  FOR, WHILE, ALLOC, DEL, TYPE, REF, CONST,
+  FOR, WHILE, ALLOC, TYPE, REF, CONST,
 
   STRING_LITERAL, NUMBER, ARRAY, CLASS,
 
@@ -65,7 +65,6 @@ export class Token {
     [TokenType.BREAK]: 'break',
     [TokenType.CONTINUE]: 'continue',
     [TokenType.ALLOC]: 'alloc',
-    [TokenType.DEL]: 'del',
     [TokenType.TYPE]: 'type',
     [TokenType.REF]: 'ref',
     [TokenType.CONST]: 'const',

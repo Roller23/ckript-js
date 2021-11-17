@@ -259,7 +259,7 @@ Lexer.chars = ".,:;{}[]()~$#";
 Lexer.chars2 = "=+-*&|/<>!%^";
 Lexer.allowedTokenKeys = [
     'function', 'class', 'array', 'return', 'if', 'else', 'for', 'while',
-    'break', 'continue', 'alloc', 'del', 'ref', 'true', 'false', 'const'
+    'break', 'continue', 'alloc', 'ref', 'true', 'false', 'const'
 ];
 Lexer.regexes = [
     new RegExp(String.raw `\\n`),

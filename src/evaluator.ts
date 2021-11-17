@@ -267,29 +267,6 @@ export class Evaluator {
     return new RpnElement(ElementType.UNKNOWN);
   }
 
-  private deleteValue(x: RpnElement): RpnElement {
-    let val: Value = x.value;
-    let v: VariablePtr = null;
-    if (val.isLvalue()) {
-      v = this.getReferenceByName(val.referenceName);
-      if (v === null) {
-        this.throwError(`${val.referenceName} is not defined`);
-      }
-      val = v!.val;
-    }
-    if (val.heapRef === -1 || val.heapRef >= this.VM.heap.chunks.length) {
-      this.throwError(`${x.value.referenceName} is not allocated on the heap`);
-    }
-    if (!this.VM.heap.chunks[val.heapRef].used) {
-      this.throwError('Double delete');
-    }
-    this.VM.free(val.heapRef);
-    if (v !== null) {
-      v.val.heapRef = -1;
-    }
-    return Evaluator.RpnVal(new Value(VarType.VOID));
-  }
-
   private performAddition(x: RpnElement, y: RpnElement): RpnElement {
     const xVal: Value = this.getValue(x);
     const yVal: Value = this.getValue(y);
@@ -1147,8 +1124,6 @@ export class Evaluator {
               resStack.push(this.logicalNot(x));
             } else if (token.op.type === TokenType.OP_NEG) {
               resStack.push(this.bitwiseNot(x));
-            } else if (token.op.type === TokenType.DEL) {
-              resStack.push(this.deleteValue(x));
             } else {
               this.throwError(`Uknkown unary operator ${Token.getName(token.op.type)}`);
             }

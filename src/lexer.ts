@@ -20,7 +20,7 @@ export class Lexer {
 
   private static allowedTokenKeys: string[] = [
     'function', 'class', 'array', 'return', 'if', 'else', 'for', 'while',
-    'break', 'continue', 'alloc', 'del', 'ref', 'true', 'false', 'const'
+    'break', 'continue', 'alloc', 'ref', 'true', 'false', 'const'
   ]
 
   private static regexes: RegExp[] = [

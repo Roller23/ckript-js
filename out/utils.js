@@ -22,7 +22,7 @@ class Utils {
         return key in Utils.opPrecedence;
     }
     static opUnary(token) {
-        return token === token_1.TokenType.OP_NOT || token === token_1.TokenType.OP_NEG || token === token_1.TokenType.DEL;
+        return token === token_1.TokenType.OP_NOT || token === token_1.TokenType.OP_NEG;
     }
     static opBinary(token) {
         return Utils.hasKey(token) && !Utils.opUnary(token);

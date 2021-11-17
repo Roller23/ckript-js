@@ -265,28 +265,6 @@ class Evaluator {
         this.throwError(`Cannot perform bitwise not on ${this.stringify(xVal)}`);
         return new RpnElement(ElementType.UNKNOWN);
     }
-    deleteValue(x) {
-        let val = x.value;
-        let v = null;
-        if (val.isLvalue()) {
-            v = this.getReferenceByName(val.referenceName);
-            if (v === null) {
-                this.throwError(`${val.referenceName} is not defined`);
-            }
-            val = v.val;
-        }
-        if (val.heapRef === -1 || val.heapRef >= this.VM.heap.chunks.length) {
-            this.throwError(`${x.value.referenceName} is not allocated on the heap`);
-        }
-        if (!this.VM.heap.chunks[val.heapRef].used) {
-            this.throwError('Double delete');
-        }
-        this.VM.free(val.heapRef);
-        if (v !== null) {
-            v.val.heapRef = -1;
-        }
-        return Evaluator.RpnVal(new vm_1.Value(utils_1.VarType.VOID));
-    }
     performAddition(x, y) {
         const xVal = this.getValue(x);
         const yVal = this.getValue(y);
@@ -1191,9 +1169,6 @@ class Evaluator {
                         }
                         else if (token.op.type === token_1.TokenType.OP_NEG) {
                             resStack.push(this.bitwiseNot(x));
-                        }
-                        else if (token.op.type === token_1.TokenType.DEL) {
-                            resStack.push(this.deleteValue(x));
                         }
                         else {
                             this.throwError(`Uknkown unary operator ${token_1.Token.getName(token.op.type)}`);
