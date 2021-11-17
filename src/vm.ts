@@ -240,7 +240,6 @@ export class CVM {
         chunk.marked = false;
       }
     }
-    console.log('GC found', foundChuns, 'and swept', swept);
     return swept;
   }
 
