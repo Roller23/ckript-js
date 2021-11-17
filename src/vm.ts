@@ -228,11 +228,9 @@ export class CVM {
   }
 
   private sweep(): number {
-    let foundChuns: number = 0;
     let swept: number = 0;
     for (const chunk of this.heap.chunks) {
       if (!chunk.used) continue;
-      foundChuns++;
       if (!chunk.marked) {
         swept++;
         this.heap.free(chunk.heapRef);
