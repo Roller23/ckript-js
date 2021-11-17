@@ -168,10 +168,6 @@ class CVM {
         this.allocatedChunks++;
         return chunk;
     }
-    free(ref) {
-        // TODO: get rid of this
-        return this.heap.free(ref);
-    }
     markChunk(chunk) {
         if (chunk.marked)
             return;

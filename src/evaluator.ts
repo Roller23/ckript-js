@@ -986,8 +986,6 @@ export class Evaluator {
       }
       val.arrayType = expr.arrayType;
       if (initialSize.value !== 0) {
-        // TODO????
-        // val.arrayValues.resize????????????????????
         val.arrayValues.length = <number>initialSize.value;
         for (let i = 0; i < initialSize.value!; i++) {
           val.arrayValues[i] = new Value(VarType.UNKNOWN);

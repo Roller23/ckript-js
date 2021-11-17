@@ -182,11 +182,6 @@ export class CVM {
     return chunk;
   }
 
-  public free(ref: number): void {
-    // TODO: get rid of this
-    return this.heap.free(ref);
-  }
-
   private markChunk(chunk: Chunk): void {
     if (chunk.marked) return;
     chunk.marked = true;
