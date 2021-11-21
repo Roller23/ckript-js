@@ -637,13 +637,8 @@ class NativeHttp {
             ev.throwError('http expects two arguments (str, str)');
         }
         const method = args[0].value.toUpperCase();
-        if (!(method === 'POST' || method === 'GET')) {
-            ev.throwError(`First argument must be a request method ('POST'|'GET')`);
-        }
         try {
-            const response = fetch(args[1].value, {
-                method: method
-            }).text();
+            const response = fetch(args[1].value, { method }).text();
             return new Value(utils_1.VarType.STR, response);
         }
         catch (e) {

@@ -655,13 +655,8 @@ class NativeHttp implements NativeFunction {
       ev.throwError('http expects two arguments (str, str)');
     }
     const method: string = (<string>args[0].value).toUpperCase();
-    if (!(method === 'POST' || method === 'GET')) {
-      ev.throwError(`First argument must be a request method ('POST'|'GET')`);
-    }
     try {
-      const response: string = fetch(args[1].value, {
-        method: method
-      }).text();
+      const response: string = fetch(args[1].value, {method}).text();
       return new Value(VarType.STR, response);
     } catch (e) {
       return new Value(VarType.STR, '');
