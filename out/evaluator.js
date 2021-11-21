@@ -645,7 +645,7 @@ class Evaluator {
         const isGlobal = fn.value.referenceName in this.VM.globals;
         if (fn.value.isLvalue() && isGlobal) {
             let callArgs = [];
-            const needsRef = fn.value.referenceName === 'bind';
+            const needsRef = ['bind', 'same_ref'].includes(fn.value.referenceName);
             for (const nodeList of call.op.funcCall) {
                 if (nodeList.length === 0)
                     break;

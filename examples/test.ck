@@ -22,3 +22,5 @@ alloc num a = 4;
 alloc num b = 4;
 alloc num c = 4;
 alloc num d = 4;
+
+println(same_ref(a, a));

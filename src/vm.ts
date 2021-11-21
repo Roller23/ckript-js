@@ -170,7 +170,8 @@ export class CVM {
     floor: new NativeFloor(),
     ceil: new NativeCeil(),
     round: new NativeRound(),
-    http: new NativeHttp()
+    http: new NativeHttp(),
+    same_ref: new NativeSameref()
   };
 
   private allocatedChunks: number = 0;
@@ -796,5 +797,20 @@ class NativeRound implements NativeFunction {
       ev.throwError('round expects one argument (num)');
     }
     return new Value(VarType.NUM, Math.round(<number>args[0].value));
+  }
+}
+
+class NativeSameref implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 2) {
+      ev.throwError('same_ref expects two arguments (ref, ref)')
+    }
+    if (args[0].heapRef === -1) {
+      ev.throwError('same_ref: first argument is not a reference');
+    }
+    if (args[1].heapRef === -1) {
+      ev.throwError('same_ref: second argument is not a reference');
+    }
+    return new Value(VarType.BOOL, args[0].heapRef === args[1].heapRef);
   }
 }
