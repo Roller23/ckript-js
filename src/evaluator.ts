@@ -973,6 +973,9 @@ export class Evaluator {
       }
       initialSize.value = elementsCount;
       if (expr.arraySize.length > 0) {
+        if (['func', 'obj', 'arr'].includes(expr.arrayType)) {
+          this.throwError(`Array of type ${expr.arrayType} cannot have initial size`);
+        }
         initialSize = this.evaluateExpression(expr.arraySize);
         if (!initialSize.isInteger()) {
           this.throwError(`Integer expected, but ${this.stringify(initialSize)} found`);
