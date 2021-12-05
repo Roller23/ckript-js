@@ -480,7 +480,8 @@ export class Parser {
     let expr = array.toExpr();
     expr.argsList = this.getManyExpressions(TokenType.COMMA, TokenType.RIGHT_PAREN);
     this.advance(); // skip the )
-    if (this.currToken.type === TokenType.LEFT_BRACKET) {
+    const hasSize: boolean = this.currToken.type === TokenType.LEFT_BRACKET;
+    if (hasSize) {
       this.advance(); // skip the [
       expr.arraySize = this.getExpression(TokenType.RIGHT_BRACKET);
       this.advance(); // skip the ]
@@ -494,6 +495,9 @@ export class Parser {
     }
     if (this.currToken.value === 'void') {
       this.throwError('invalid array expression, cannot hold void values', this.currToken);
+    }
+    if (hasSize && ['obj', 'arr', 'func'].includes(this.currToken.value)) {
+      this.throwError(`invalid array expression, cannot define initial size for an array of ${this.currToken.value}`, this.currToken);
     }
     expr.arrayType = this.currToken.value;
     this.advance(); // skip the type
