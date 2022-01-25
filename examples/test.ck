@@ -24,3 +24,14 @@ alloc num c = 4;
 alloc num d = 4;
 
 println(same_ref(a, a));
+
+alloc str g = "Hello";
+
+func changeMe = function(ref str greeting) void {
+  greeting += " there";
+};
+
+
+changeMe(g);
+
+println("Greeting @1"(g));

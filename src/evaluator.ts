@@ -736,13 +736,16 @@ export class Evaluator {
           this.throwError(`Argument ${i + 1} expected to be a reference, but value given`);
         }
         let argType: VarType = argVal.type;
-        if (argType !== Utils.varLUT[fnValue.func!.params[i].typeName]) {
+        const expectedType = Utils.varLUT[fnValue.func!.params[i].typeName];
+        if (argType !== expectedType) {
           let realVal: Value = Evaluator.makeCopy(argVal);
           if (argVal.heapRef !== -1) {
             realVal = this.getHeapVal(argVal.heapRef);
             argType = realVal.type;
           }
-          this.throwError(`Argument ${i + 1} expected to be ${fnValue.func!.params[i].typeName}, but ${this.stringify(realVal)} given`);
+          if (argType !== expectedType) {
+            this.throwError(`Argument ${i + 1} expected to be ${fnValue.func!.params[i].typeName}, but ${this.stringify(realVal)} given`);
+          }
         }
         let _var: VariablePtr = (funcEvaluator.stack[fnValue.func!.params[i].paramName] = new Variable());
         _var.type = fnValue.func!.params[i].typeName;
