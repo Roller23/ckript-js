@@ -151,6 +151,7 @@ export class CVM {
     split: new NativeSplit(),
     substr: new NativeSubstr(),
     replace: new NativeReplace(),
+    replace_all: new NativeReplaceall(),
     to_bytes: new NativeTobytes(),
     from_bytes: new NativeFrombytes(),
     bind: new NativeBind(),
@@ -557,6 +558,18 @@ class NativeReplace implements NativeFunction {
     const searchVal = args[1].value as string;
     const replaceVal = args[2].value as string;
     return new Value(VarType.STR, str.replace(searchVal, replaceVal));
+  }
+}
+
+class NativeReplaceall implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 3 || args[0].type !== VarType.STR || args[1].type !== VarType.STR || args[2].type !== VarType.STR) {
+      ev.throwError(`replace_all expects three arguments (str, str, str)`);
+    }
+    const str = args[0].value as string;
+    const searchVal = args[1].value as string;
+    const replaceVal = args[2].value as string;
+    return new Value(VarType.STR, str.replaceAll(searchVal, replaceVal));
   }
 }
 

@@ -37,3 +37,4 @@ changeMe(g);
 println("Greeting @1"(g));
 
 println(replace("Hello world", "llo wor", ""));
+println(replace_all("Hello world", "l", "r"));
