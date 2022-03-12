@@ -365,7 +365,7 @@ class NativeInput implements NativeFunction {
 class NativeSizeof implements NativeFunction {
   public execute(args: Value[], ev: Evaluator): Value {
     if (args.length !== 1) {
-      ev.throwError(`size expects one argument (arr|str)`);
+      ev.throwError(`sizeof expects one argument (arr|str)`);
     }
     const arg: Value = args[0];
     if (arg.type === VarType.ARR) {
