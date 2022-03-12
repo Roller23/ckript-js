@@ -706,12 +706,13 @@ class Evaluator {
         if (fnValue.func.params.length !== 0) {
             let i = 0;
             for (const nodeList of call.op.funcCall) {
-                const argVal = this.evaluateExpression(nodeList, fnValue.func.params[i].isRef);
-                if (fnValue.func.params[i].isRef && argVal.heapRef === -1) {
+                const fnParam = fnValue.func.params[i];
+                const argVal = this.evaluateExpression(nodeList, fnParam.isRef);
+                if (fnParam.isRef && argVal.heapRef === -1) {
                     this.throwError(`Argument ${i + 1} expected to be a reference, but value given`);
                 }
                 let argType = argVal.type;
-                const expectedType = utils_1.Utils.varLUT[fnValue.func.params[i].typeName];
+                const expectedType = utils_1.Utils.varLUT[fnParam.typeName];
                 if (argType !== expectedType) {
                     let realVal = Evaluator.makeCopy(argVal);
                     if (argVal.heapRef !== -1) {
@@ -719,11 +720,11 @@ class Evaluator {
                         argType = realVal.type;
                     }
                     if (argType !== expectedType) {
-                        this.throwError(`Argument ${i + 1} expected to be ${fnValue.func.params[i].typeName}, but ${this.stringify(realVal)} given`);
+                        this.throwError(`Argument ${i + 1} expected to be ${fnParam.typeName}, but ${this.stringify(realVal)} given`);
                     }
                 }
-                let _var = (funcEvaluator.stack[fnValue.func.params[i].paramName] = new vm_1.Variable());
-                _var.type = fnValue.func.params[i].typeName;
+                let _var = (funcEvaluator.stack[fnParam.paramName] = new vm_1.Variable());
+                _var.type = fnParam.typeName;
                 _var.val = argVal;
                 i++;
             }
