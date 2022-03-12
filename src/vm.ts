@@ -150,6 +150,7 @@ export class CVM {
     contains: new NativeContains(),
     split: new NativeSplit(),
     substr: new NativeSubstr(),
+    replace: new NativeReplace(),
     to_bytes: new NativeTobytes(),
     from_bytes: new NativeFrombytes(),
     bind: new NativeBind(),
@@ -544,6 +545,18 @@ class NativeSplit implements NativeFunction {
       res.arrayValues.push(new Value(VarType.STR, str));
     }
     return res;
+  }
+}
+
+class NativeReplace implements NativeFunction {
+  public execute(args: Value[], ev: Evaluator): Value {
+    if (args.length !== 3 || args[0].type !== VarType.STR || args[1].type !== VarType.STR || args[2].type !== VarType.STR) {
+      ev.throwError(`replace expects three arguments (str, str, str)`);
+    }
+    const str = args[0].value as string;
+    const searchVal = args[1].value as string;
+    const replaceVal = args[2].value as string;
+    return new Value(VarType.STR, str.replace(searchVal, replaceVal));
   }
 }
 

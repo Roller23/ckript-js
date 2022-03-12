@@ -138,6 +138,7 @@ class CVM {
             contains: new NativeContains(),
             split: new NativeSplit(),
             substr: new NativeSubstr(),
+            replace: new NativeReplace(),
             to_bytes: new NativeTobytes(),
             from_bytes: new NativeFrombytes(),
             bind: new NativeBind(),
@@ -362,7 +363,7 @@ class NativeInput {
 class NativeSizeof {
     execute(args, ev) {
         if (args.length !== 1) {
-            ev.throwError(`size expects one argument (arr|str)`);
+            ev.throwError(`sizeof expects one argument (arr|str)`);
         }
         const arg = args[0];
         if (arg.type === utils_1.VarType.ARR) {
@@ -533,6 +534,17 @@ class NativeSplit {
             res.arrayValues.push(new Value(utils_1.VarType.STR, str));
         }
         return res;
+    }
+}
+class NativeReplace {
+    execute(args, ev) {
+        if (args.length !== 3 || args[0].type !== utils_1.VarType.STR || args[1].type !== utils_1.VarType.STR || args[2].type !== utils_1.VarType.STR) {
+            ev.throwError(`replace expects three arguments (str, str, str)`);
+        }
+        const str = args[0].value;
+        const searchVal = args[1].value;
+        const replaceVal = args[2].value;
+        return new Value(utils_1.VarType.STR, str.replace(searchVal, replaceVal));
     }
 }
 class NativeTobytes {

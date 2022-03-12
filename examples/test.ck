@@ -35,3 +35,5 @@ func changeMe = function(ref str greeting) void {
 changeMe(g);
 
 println("Greeting @1"(g));
+
+println(replace("Hello world", "llo wor", ""));
